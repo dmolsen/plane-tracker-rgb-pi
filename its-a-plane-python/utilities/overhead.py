@@ -439,7 +439,7 @@ class Overhead:
                             "distance": distance_from_flight_to_home(f),
 
                             # --- Aircraft image (JetPhotos via FR24) ---
-                            "aircraft_image": self.trace_safe_get(
+                            "aircraft_image": self.safe_get(
                                 d, "aircraft", "images", "large", 0, "src"
                             ),
                             "aircraft_image_credit": self.safe_get(

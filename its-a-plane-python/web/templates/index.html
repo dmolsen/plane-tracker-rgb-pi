@@ -110,8 +110,8 @@
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-map-marker-alt"></i> Current Closest Flight</h5>
         {% if closest %}
-            {% if recent.aircraft_image %}
-                <img src="{{ recent.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
+            {% if closest.aircraft_image %}
+                <img src="{{ closest.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
             {% endif %}
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ closest.airline }}<br> 
@@ -153,8 +153,8 @@
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-globe"></i> Current Farthest Flight</h5>
         {% if farthest %}
-            {% if recent.aircraft_image %}
-                <img src="{{ recent.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
+            {% if farthest.aircraft_image %}
+                <img src="{{ farthest.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
             {% endif %}
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ farthest.airline }}<br> 

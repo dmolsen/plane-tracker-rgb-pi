@@ -88,7 +88,7 @@
             <a
                 class="btn btn-sm btn-primary"
                 target="_blank"
-                href="https://www.flightaware.com/live/flight/{{ farthest.callsign }}/history/{{ dt.strftime('%Y%m%d') }}/{{ dt.strftime('%H%M') }}Z/{{ farthest.origin }}/{{ farthest.destination }}"
+                href="{{ flight.flightaware_url }}"
             >
                 <i class="fas fa-external-link-alt"></i> View on FlightAware
             </a>

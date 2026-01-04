@@ -109,6 +109,28 @@ def distance_from_flight_to_home(flight):
 def distance_to_point(flight, lat, lon):
     return haversine(flight.latitude, flight.longitude, lat, lon)
 
+def build_flightaware_url(entry):
+    try:
+        if not (
+            entry.get("callsign")
+            and entry.get("origin_icao")
+            and entry.get("destination_icao")
+            and entry.get("time_scheduled_departure")
+        ):
+            return None
+
+        dt = datetime.utcfromtimestamp(entry["time_scheduled_departure"])
+        date = dt.strftime("%Y%m%d")
+        time = dt.strftime("%H%MZ")
+
+        return (
+            f"https://www.flightaware.com/live/flight/"
+            f"{entry['callsign']}/history/"
+            f"{date}/{time}/"
+            f"{entry['origin_icao']}/{entry['destination_icao']}"
+        )
+    except Exception:
+        return None
 
 # --- Closest Flights Logging ---
 
@@ -307,32 +329,71 @@ class Overhead:
                         dist_d = distance_to_point(f, dest_lat, dest_lon) if dest_lat else 0
 
                         entry = {
+                            # --- Airline / Aircraft ---
                             "airline": airline,
                             "plane": plane,
-                            "origin": origin,
+
+                            # --- Callsign ---
+                            "callsign": callsign,
+
+                            # --- Origin airport ---
+                            "origin": origin,  # IATA (existing behavior)
                             "origin_name": origin_name,
+                            "origin_iata": self.safe_get(o, "code", "iata", default=origin),
+                            "origin_icao": self.safe_get(o, "code", "icao"),
                             "origin_latitude": origin_lat,
                             "origin_longitude": origin_lon,
-                            "destination": destination,
+
+                            # --- Destination airport ---
+                            "destination": destination,  # IATA (existing behavior)
                             "destination_name": dest_name,
+                            "destination_iata": self.safe_get(dest, "code", "iata", default=destination),
+                            "destination_icao": self.safe_get(dest, "code", "icao"),
                             "destination_latitude": dest_lat,
                             "destination_longitude": dest_lon,
+
+                            # --- Plane position ---
                             "plane_latitude": f.latitude,
                             "plane_longitude": f.longitude,
+                            "vertical_speed": f.vertical_speed,
+                            "direction": degrees_to_cardinal(plane_bearing(f)),
+
+                            # --- Ownership ---
                             "owner_iata": f.airline_iata or "N/A",
-                            "owner_icao": self.safe_get(d, "owner", "code", "icao", default="") or f.airline_icao or "",
+                            "owner_icao": (
+                                self.safe_get(d, "owner", "code", "icao", default="")
+                                or f.airline_icao
+                                or ""
+                            ),
+
+                            # --- Timing (UTC epoch seconds) ---
                             "time_scheduled_departure": time_sched_dep,
                             "time_scheduled_arrival": time_sched_arr,
                             "time_real_departure": time_real_dep,
                             "time_estimated_arrival": time_est_arr,
-                            "vertical_speed": f.vertical_speed,
-                            "callsign": callsign,
+
+                            # --- Distances ---
                             "distance_origin": dist_o,
                             "distance_destination": dist_d,
                             "distance": distance_from_flight_to_home(f),
-                            "direction": degrees_to_cardinal(plane_bearing(f)),
-                            "timestamp": email_alerts.get_timestamp()
+
+                            # --- Aircraft image (JetPhotos via FR24) ---
+                            "aircraft_image": self.safe_get(
+                                d, "aircraft", "images", "large", 0, "src"
+                            ),
+                            "aircraft_image_credit": self.safe_get(
+                                d, "aircraft", "images", "large", 0, "copyright"
+                            ),
+                            "aircraft_image_source": self.safe_get(
+                                d, "aircraft", "images", "large", 0, "source"
+                            ),
+
+                            # --- Metadata ---
+                            "timestamp": email_alerts.get_timestamp(),
+
                         }
+
+                        entry["flightaware_url"] = build_flightaware_url(entry)
 
                         # Append to current data
                         data.append(entry)

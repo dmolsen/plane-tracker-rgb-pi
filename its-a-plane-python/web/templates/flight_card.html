@@ -4,17 +4,23 @@
   {% endif %}
   
   <p class="mb-1">
-      <span class="label">Airline:</span> {{ flight.airline }}<br>
-      <span class="label">Flight:</span> {{ flight.callsign }} ({{ flight.plane }})<br>
-      <span class="label">Route (IATA):</span> {{ flight.origin }} → {{ flight.destination }}<br>
-      <span class="label">Route (Names):</span> {{ flight.origin_name }} → {{ flight.destination_name }}<br>
-      <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
-      <span class="label">Route Length:</span> {{ flight.farthest_value | round(1) }} mi<br>
+      <span class="label">Airline:</span> {{ flight.airline }}<br> 
+      {% if flight.airline == 'Private Owner' %}
+        <span class="label">Registry:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ flight.callsign }}">{{ flight.callsign }}</a><br>
+        <span class="label">Plane Type:</span> {{ flight.plane }}<br>
+      {% else %}
+        <span class="label">Flight:</span> {{ flight.callsign }} ({{ flight.plane }})<br>
+        <span class="label">Route (IATA):</span> {{ flight.origin }} → {{ flight.destination }}<br>
+        <span class="label">Route (Names):</span> {{ flight.origin_name }} → {{ flight.destination_name }}<br>
+        <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
+        <span class="label">Route Length:</span> {{ flight.farthest_value | round(1) }} mi<br>
+      {% endif %}
   </p>
-
-  {% if flight.flightaware_history %}
-  <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_history }}">
-      <i class="fas fa-external-link-alt"></i> View History on FlightAware
-  </a>
+  {% if flight.airline != 'Private Owner' %}
+    {% if flight.flightaware_history %}
+    <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_history }}">
+        <i class="fas fa-external-link-alt"></i> View History on FlightAware
+    </a>
+    {% endif %}
   {% endif %}
 </div>

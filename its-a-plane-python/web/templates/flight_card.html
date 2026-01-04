@@ -5,25 +5,25 @@
   
   <p class="mb-1">
       <span class="label">Airline:</span> {{ flight.airline }}<br> 
-      {% if flight.airline == 'Private Owner' %}
+      {% if flight.airline == 'Private owner' %}
         <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ flight.callsign }}">{{ flight.callsign }}</a><br>
         <span class="label">Plane Type:</span> {{ flight.plane }}<br>
       {% else %}
         <span class="label">Flight:</span> {{ flight.callsign }} ({{ flight.plane }})<br>
-        <span class="label">Route:</span> {{ flight.origin_name }} ({{ flight.origin }}) → {{ flight.destination_name }} ({{ flight.destination }})<br>
-        {% if flight.distance %}
-          <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
-        {% endif %}
-        {% if flight.farthest_value %}
-          <span class="label">Route Length:</span> {{ flight.farthest_value | round(1) }} mi<br>
-        {% endif %}
+      {% endif %}
+      {% if flight.origin or flight.destination %}
+        <span class="label">Route:</span> {% if flight.origin %}{{ flight.origin_name }} ({{ flight.origin }}){% else %}Unknown{% endif %} → {% if flight.destination %}{{ flight.destination_name }} ({{ flight.destination }}){% else %}Unknown{% endif %}<br>
+      {% endif %}
+      {% if flight.distance %}
+        <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
+      {% endif %}
+      {% if flight.farthest_value %}
+        <span class="label">Route Length:</span> {{ flight.farthest_value | round(1) }} mi<br>
       {% endif %}
   </p>
-  {% if flight.airline != 'Private Owner' %}
-    {% if flight.flightaware_history %}
-    <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_history }}">
-        <i class="fas fa-external-link-alt"></i> View History on FlightAware
-    </a>
-    {% endif %}
+  {% if flight.flightaware_history %}
+  <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_history }}">
+      <i class="fas fa-external-link-alt"></i> View History on FlightAware
+  </a>
   {% endif %}
 </div>

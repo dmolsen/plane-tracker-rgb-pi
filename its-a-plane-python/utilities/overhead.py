@@ -3,7 +3,7 @@ import json
 import math
 from time import sleep
 from threading import Thread, Lock
-from datetime import datetime
+from datetime import datetime, timezone
 
 from FlightRadar24.api import FlightRadar24API
 from requests.exceptions import ConnectionError
@@ -111,23 +111,24 @@ def distance_to_point(flight, lat, lon):
 
 def build_flightaware_url(entry):
     try:
-        if not (
-            entry.get("callsign")
-            and entry.get("origin_icao")
-            and entry.get("destination_icao")
-            and entry.get("time_scheduled_departure")
-        ):
+        callsign = entry.get("callsign")
+        origin_icao = entry.get("origin_icao")
+        dest_icao = entry.get("destination_icao")
+        dep_ts = entry.get("time_scheduled_departure")
+
+        if not (callsign and origin_icao and dest_icao and dep_ts):
             return None
 
-        dt = datetime.utcfromtimestamp(entry["time_scheduled_departure"])
-        date = dt.strftime("%Y%m%d")
-        time = dt.strftime("%H%MZ")
+        # Convert to UTC-aware datetime
+        dt = datetime.fromtimestamp(dep_ts, tz=timezone.utc)
+        date_str = dt.strftime("%Y%m%d")
+        time_str = dt.strftime("%H%MZ")
 
         return (
             f"https://www.flightaware.com/live/flight/"
-            f"{entry['callsign']}/history/"
-            f"{date}/{time}/"
-            f"{entry['origin_icao']}/{entry['destination_icao']}"
+            f"{callsign}/history/"
+            f"{date_str}/{time_str}/"
+            f"{origin_icao}/{dest_icao}"
         )
     except Exception:
         return None

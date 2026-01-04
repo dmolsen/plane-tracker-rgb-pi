@@ -53,6 +53,12 @@
         .flight-link {
             text-decoration: none;
         }
+
+        .flight-img {
+            max-width: 120px;
+            display: block;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -63,43 +69,78 @@
 
 <div class="container mt-4">
 
+    <!-- Most Recent Flight -->
+    <div class="card shadow-sm p-3">
+        <h5><i class="fas fa-clock"></i> Most Recent Flight</h5>
+        {% if recent %}
+            <img src="{{ recent.plane_image }}" alt="{{ recent.plane }}" class="flight-img">
+            <p class="mb-1">
+                <span class="label">Airline:</span> {{ recent.airline }}<br>
+                <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
+                <span class="label">Route:</span> {{ recent.origin }} → {{ recent.destination }}<br>
+                <span class="label">Departure:</span> {{ recent.time_scheduled_departure | datetime }} UTC<br>
+                <span class="label">Distance from Home:</span> {{ recent.distance | round(1) }} mi
+            </p>
+            {% if recent.flightaware_url %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_url }}">
+                <i class="fas fa-external-link-alt"></i> View on FlightAware
+            </a>
+            {% endif %}
+        {% else %}
+            <p>No recent flight data available.</p>
+        {% endif %}
+        <div class="mt-2">
+            <a href="/recent" class="flight-link">Map</a> ·
+            <a href="/recent/json" class="flight-link">Logs</a>
+        </div>
+    </div>
+
     <!-- Closest Flight -->
     <div class="card shadow-sm p-3">
-        <h5><i class="fas fa-map-marker-alt"></i> Closest Flight</h5>
-        <a href="/closest" class="flight-link">View Map</a> ·
-        <a href="/closest/json" class="flight-link">View Logs</a>
+        <h5><i class="fas fa-map-marker-alt"></i> Current Closest Flight</h5>
+        {% if closest %}
+            <p class="mb-1">
+                <span class="label">Airline:</span> {{ closest.airline }}<br>
+                <span class="label">Flight:</span> {{ closest.callsign }} ({{ closest.plane }})<br>
+                <span class="label">Route:</span> {{ closest.origin }} → {{ closest.destination }}<br>
+                <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi
+            </p>
+            {% if closest.flightaware_url %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_url }}">
+                <i class="fas fa-external-link-alt"></i> View on FlightAware
+            </a>
+            {% endif %}
+        {% else %}
+            <p>No closest flight data available.</p>
+        {% endif %}
+        <div class="mt-2">
+            <a href="/closest" class="flight-link">Map</a> ·
+            <a href="/closest/json" class="flight-link">Logs</a>
+        </div>
     </div>
 
     <!-- Farthest Flight -->
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-globe"></i> Current Farthest Flight</h5>
-
         {% if farthest %}
-            {% set dep = farthest.time_real_departure | int %}
-            {% set dt = dep | datetime %}
-
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ farthest.airline }}<br>
                 <span class="label">Flight:</span> {{ farthest.callsign }} ({{ farthest.plane }})<br>
                 <span class="label">Route:</span> {{ farthest.origin }} → {{ farthest.destination }}<br>
-                <span class="label">Distance:</span> {{ farthest.farthest_value | round(1) }} km
+                <span class="label">Distance:</span> {{ farthest.farthest_value | round(1) }} mi
             </p>
-
-            <a
-                class="btn btn-sm btn-primary"
-                target="_blank"
-                href="{{ farthest.flightaware_url }}"
-            >
+            {% if farthest.flightaware_url %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_url }}">
                 <i class="fas fa-external-link-alt"></i> View on FlightAware
             </a>
-
-            <div class="mt-2">
-                <a href="/farthest" class="flight-link">Map</a> ·
-                <a href="/farthest/json" class="flight-link">Logs</a>
-            </div>
+            {% endif %}
         {% else %}
             <p>No farthest flight data available.</p>
         {% endif %}
+        <div class="mt-2">
+            <a href="/farthest" class="flight-link">Map</a> ·
+            <a href="/farthest/json" class="flight-link">Logs</a>
+        </div>
     </div>
 
 </div>

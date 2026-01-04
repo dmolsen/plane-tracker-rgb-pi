@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flight Tracker Web</title>
-    
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 
@@ -18,11 +18,11 @@
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f4f6f8;
-            padding-top: 70px; /* Space for fixed header */
+            padding-top: 70px;
         }
 
         header {
-            background-color: #0d47a1; /* Dark blue */
+            background-color: #0d47a1;
             color: #fff;
             position: fixed;
             top: 0;
@@ -38,44 +38,72 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: auto;
         }
 
-        .card-link {
-            font-size: 1.2rem;
-            text-decoration: none;
-            color: #0d47a1;
-        }
-
-        .card-link:hover {
-            text-decoration: underline;
-        }
-
         .card {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .label {
+            font-weight: 700;
+        }
+
+        .flight-link {
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1><i class="fas fa-plane"></i> Flight Tracker Dashboard</h1>
-    </header>
+<header>
+    <h1><i class="fas fa-plane"></i> Flight Tracker Dashboard</h1>
+</header>
 
-    <div class="container mt-4">
-        <div class="card shadow-sm p-3">
-            <a href="/closest" class="card-link"><i class="fas fa-map-marker-alt"></i> Closest Flight (Map)</a>
-            <a href="/closest/json" class="card-link"><i class="fas fa-file-alt"></i> Closest Flight (Logs)</a>
-        </div>
+<div class="container mt-4">
 
-        <div class="card shadow-sm p-3">
-            <a href="/farthest" class="card-link"><i class="fas fa-globe"></i> Farthest Flights (Map)</a>
-            <a href="/farthest/json" class="card-link"><i class="fas fa-file-alt"></i> Farthest Flights (Logs)</a>
-        </div>
+    <!-- Closest Flight -->
+    <div class="card shadow-sm p-3">
+        <h5><i class="fas fa-map-marker-alt"></i> Closest Flight</h5>
+        <a href="/closest" class="flight-link">View Map</a> ·
+        <a href="/closest/json" class="flight-link">View Logs</a>
     </div>
 
-    <!-- Bootstrap JS (optional if you need JS components) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Farthest Flight -->
+    <div class="card shadow-sm p-3">
+        <h5><i class="fas fa-globe"></i> Current Farthest Flight</h5>
+
+        {% if farthest %}
+            {% set dep = farthest.time_real_departure | int %}
+            {% set dt = dep | datetime %}
+
+            <p class="mb-1">
+                <span class="label">Airline:</span> {{ farthest.airline }}<br>
+                <span class="label">Flight:</span> {{ farthest.callsign }} ({{ farthest.plane }})<br>
+                <span class="label">Route:</span> {{ farthest.origin }} → {{ farthest.destination }}<br>
+                <span class="label">Distance:</span> {{ farthest.farthest_value | round(1) }} km
+            </p>
+
+            <a
+                class="btn btn-sm btn-primary"
+                target="_blank"
+                href="https://www.flightaware.com/live/flight/{{ farthest.callsign }}/history/{{ dt.strftime('%Y%m%d') }}/{{ dt.strftime('%H%M') }}Z/{{ farthest.origin }}/{{ farthest.destination }}"
+            >
+                <i class="fas fa-external-link-alt"></i> View on FlightAware
+            </a>
+
+            <div class="mt-2">
+                <a href="/farthest" class="flight-link">Map</a> ·
+                <a href="/farthest/json" class="flight-link">Logs</a>
+            </div>
+        {% else %}
+            <p>No farthest flight data available.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

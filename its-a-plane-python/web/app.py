@@ -3,6 +3,12 @@ from flask import Flask, render_template, jsonify, send_from_directory
 import json
 import os
 
+from datetime import datetime
+
+@app.template_filter("datetime")
+def unix_to_datetime(ts):
+    return datetime.utcfromtimestamp(ts)
+
 # /web is the folder that this file lives in
 WEB_DIR = os.path.dirname(__file__)
 BASE_DIR = os.path.abspath(os.path.join(WEB_DIR, ".."))
@@ -29,7 +35,16 @@ def load_json(path, default):
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    farthest = load_json(FARTHEST_FILE, [])
+
+    # Pick the most relevant flight (first entry)
+    current_farthest = farthest[0] if farthest else None
+
+    return render_template(
+        "index.html",
+        farthest=current_farthest
+    )
+
 
 
 @app.get("/closest/json")

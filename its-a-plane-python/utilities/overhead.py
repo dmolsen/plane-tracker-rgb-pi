@@ -284,12 +284,19 @@ class Overhead:
         Thread(target=self._grab).start()
 
     # Safe dict access
-    def safe_get(self, d, *keys, default=None):
+    def safe_get(d, *keys, default=None):
+        """Get a nested value from dicts and lists safely."""
         for key in keys:
-            if not d or not isinstance(d, dict):
+            if isinstance(d, dict):
+                d = d.get(key, default)
+            elif isinstance(d, list) and isinstance(key, int):
+                if 0 <= key < len(d):
+                    d = d[key]
+                else:
+                    return default
+            else:
                 return default
-            d = d.get(key)
-        return d if d is not None else default
+        return d
 
     # Core data grab
     def _grab(self):

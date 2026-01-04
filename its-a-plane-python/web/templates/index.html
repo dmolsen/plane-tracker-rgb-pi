@@ -79,7 +79,8 @@
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ recent.airline }}<br>
                 <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
-                <span class="label">Route:</span> {{ recent.origin }} → {{ recent.destination }}
+                <span class="label">Route (IATA):</span> {{ flight.origin }} → {{ flight.destination }}<br>
+                <span class="label">Route (Names):</span> {{ flight.origin_name }} → {{ flight.destination_name }}<br>
             </p>
             {% if recent.flightaware_live %}
             <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_live }}">
@@ -102,8 +103,10 @@
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ closest.airline }}<br>
                 <span class="label">Flight:</span> {{ closest.callsign }} ({{ closest.plane }})<br>
-                <span class="label">Route:</span> {{ closest.origin }} → {{ closest.destination }}<br>
+                <span class="label">Route (IATA):</span> {{ flight.origin }} → {{ flight.destination }}<br>
+                <span class="label">Route (Names):</span> {{ flight.origin_name }} → {{ flight.destination_name }}<br>
                 <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi
+                <span class="label">Route Length:</span> {{ farthest.farthest_value | round(1) }} mi
             </p>
             {% if closest.flightaware_history %}
             <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_history }}">
@@ -130,8 +133,10 @@
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ farthest.airline }}<br>
                 <span class="label">Flight:</span> {{ farthest.callsign }} ({{ farthest.plane }})<br>
-                <span class="label">Route:</span> {{ farthest.origin }} → {{ farthest.destination }}<br>
-                <span class="label">Distance:</span> {{ farthest.farthest_value | round(1) }} mi
+                <span class="label">Route (IATA):</span> {{ flight.origin }} → {{ flight.destination }}<br>
+                <span class="label">Route (Names):</span> {{ flight.origin_name }} → {{ flight.destination_name }}<br>
+                <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi
+                <span class="label">Route Length:</span> {{ farthest.farthest_value | round(1) }} mi
             </p>
             {% if farthest.flightaware_history %}
             <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_history }}">

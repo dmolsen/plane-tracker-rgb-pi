@@ -1,22 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flight Tracker Web</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+
     <style>
-        body { font-family: Arial; padding: 20px; }
-        a { display: block; margin: 10px 0; font-size: 20px; }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f6f8;
+            padding-top: 70px; /* Space for fixed header */
+        }
+
+        header {
+            background-color: #0d47a1; /* Dark blue */
+            color: #fff;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .card-link {
+            font-size: 1.2rem;
+            text-decoration: none;
+            color: #0d47a1;
+        }
+
+        .card-link:hover {
+            text-decoration: underline;
+        }
+
+        .card {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
-    <h1>Flight Tracker Dashboard</h1>
 
-    <a href="/closest">Closest Flight (Map)</a>
-    <a href="/closest/json">Closest Flight (Logs)</a>
+    <header>
+        <h1><i class="fas fa-plane"></i> Flight Tracker Dashboard</h1>
+    </header>
 
-    <br>
+    <div class="container mt-4">
+        <div class="card shadow-sm p-3">
+            <a href="/closest" class="card-link"><i class="fas fa-map-marker-alt"></i> Closest Flight (Map)</a>
+            <a href="/closest/json" class="card-link"><i class="fas fa-file-alt"></i> Closest Flight (Logs)</a>
+        </div>
 
-    <a href="/farthest">Farthest Flights (Map)</a>
-    <a href="/farthest/json">Farthest Flights (Logs)</a>
+        <div class="card shadow-sm p-3">
+            <a href="/farthest" class="card-link"><i class="fas fa-globe"></i> Farthest Flights (Map)</a>
+            <a href="/farthest/json" class="card-link"><i class="fas fa-file-alt"></i> Farthest Flights (Logs)</a>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (optional if you need JS components) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

@@ -73,17 +73,18 @@
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-clock"></i> Most Recent Flight</h5>
         {% if recent %}
-            <img src="{{ recent.plane_image }}" alt="{{ recent.plane }}" class="flight-img">
+            {% if recent.plane_image %}
+                <img src="{{ recent.plane_image }}" alt="{{ recent.plane }}" class="flight-img">
+            {% endif %}
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ recent.airline }}<br>
                 <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
                 <span class="label">Route:</span> {{ recent.origin }} → {{ recent.destination }}<br>
                 <span class="label">Departure:</span> {{ recent.time_scheduled_departure | datetime }} UTC<br>
-                <span class="label">Distance from Home:</span> {{ recent.distance | round(1) }} mi
             </p>
-            {% if recent.flightaware_url %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_url }}">
-                <i class="fas fa-external-link-alt"></i> View on FlightAware
+            {% if recent.flightaware_live %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_live }}">
+                <i class="fas fa-external-link-alt"></i> View Live on FlightAware
             </a>
             {% endif %}
         {% else %}
@@ -105,10 +106,13 @@
                 <span class="label">Route:</span> {{ closest.origin }} → {{ closest.destination }}<br>
                 <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi
             </p>
-            {% if closest.flightaware_url %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_url }}">
-                <i class="fas fa-external-link-alt"></i> View on FlightAware
+            {% if closest.flightaware_history %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_history }}">
+                <i class="fas fa-external-link-alt"></i> View History on FlightAware
             </a>
+            {% endif %}
+            {% if closest.flightaware_hint %}
+                <small class="text-muted">Hint: {{ closest.flightaware_hint }}</small>
             {% endif %}
         {% else %}
             <p>No closest flight data available.</p>
@@ -130,10 +134,13 @@
                 <span class="label">Route:</span> {{ farthest.origin }} → {{ farthest.destination }}<br>
                 <span class="label">Distance:</span> {{ farthest.farthest_value | round(1) }} mi
             </p>
-            {% if farthest.flightaware_url %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_url }}">
-                <i class="fas fa-external-link-alt"></i> View on FlightAware
+            {% if farthest.flightaware_history %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_history }}">
+                <i class="fas fa-external-link-alt"></i> View History on FlightAware
             </a>
+            {% endif %}
+            {% if farthest.flightaware_hint %}
+                <small class="text-muted">Hint: {{ farthest.flightaware_hint }}</small>
             {% endif %}
         {% else %}
             <p>No farthest flight data available.</p>

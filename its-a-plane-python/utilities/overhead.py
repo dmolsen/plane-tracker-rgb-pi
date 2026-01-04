@@ -109,29 +109,46 @@ def distance_from_flight_to_home(flight):
 def distance_to_point(flight, lat, lon):
     return haversine(flight.latitude, flight.longitude, lat, lon)
 
-def build_flightaware_url(entry):
-    try:
-        callsign = entry.get("callsign")
-        origin_icao = entry.get("origin_icao")
-        dest_icao = entry.get("destination_icao")
-        dep_ts = entry.get("time_scheduled_departure")
+def build_flightaware_urls(entry):
+    """
+    Returns a dict with:
+      - live: always present, points to the live flight page
+      - history: optional, points to the history page if scheduled departure exists
+    """
+    urls = {}
+    callsign = entry.get("callsign")
+    if not callsign:
+        return {"live": None, "history": None}
 
-        if not (callsign and origin_icao and dest_icao and dep_ts):
-            return None
+    # Live URL
+    urls["live"] = f"https://www.flightaware.com/live/flight/{callsign}"
 
-        # Convert to UTC-aware datetime
-        dt = datetime.fromtimestamp(dep_ts, tz=timezone.utc)
-        date_str = dt.strftime("%Y%m%d")
-        time_str = dt.strftime("%H%MZ")
+    # History URL (optional)
+    origin_icao = entry.get("origin_icao")
+    dest_icao = entry.get("destination_icao")
+    dep_ts = entry.get("time_scheduled_departure")
 
-        return (
-            f"https://www.flightaware.com/live/flight/"
-            f"{callsign}/history/"
-            f"{date_str}/{time_str}/"
-            f"{origin_icao}/{dest_icao}"
-        )
-    except Exception:
-        return None
+    if origin_icao and dest_icao and dep_ts:
+        try:
+            dt = datetime.fromtimestamp(dep_ts, tz=timezone.utc)
+            urls["history"] = (
+                f"https://www.flightaware.com/live/flight/"
+                f"{callsign}/history/"
+            )
+        except Exception:
+            urls["history"] = None
+    else:
+        urls["history"] = None
+
+    # Optional hint string
+    if dep_ts:
+        dt_local = datetime.fromtimestamp(dep_ts)  # local time
+        urls["hint"] = dt_local.strftime("%b %d %Y %I:%M %p")
+    else:
+        urls["hint"] = "Scheduled departure unknown"
+
+    return urls
+
 
 # --- Closest Flights Logging ---
 
@@ -394,7 +411,10 @@ class Overhead:
 
                         }
 
-                        entry["flightaware_url"] = build_flightaware_url(entry)
+                        urls = build_flightaware_urls(entry)
+                        entry["flightaware_live"] = urls["live"]
+                        entry["flightaware_history"] = urls["history"]
+                        entry["flightaware_hint"] = urls["hint"]
 
                         # Append to current data
                         data.append(entry)

@@ -3,12 +3,6 @@ from flask import Flask, render_template, jsonify, send_from_directory
 import json
 import os
 
-from datetime import datetime
-
-@app.template_filter("datetime")
-def unix_to_datetime(ts):
-    return datetime.utcfromtimestamp(ts)
-
 # /web is the folder that this file lives in
 WEB_DIR = os.path.dirname(__file__)
 BASE_DIR = os.path.abspath(os.path.join(WEB_DIR, ".."))
@@ -18,6 +12,11 @@ app = Flask(
     template_folder=os.path.join(WEB_DIR, "templates"),
     static_folder=os.path.join(WEB_DIR, "static")
 )
+
+from datetime import datetime
+@app.template_filter("datetime")
+def unix_to_datetime(ts):
+    return datetime.utcfromtimestamp(ts)
 
 # JSON flight logs (stored outside /web)
 CLOSEST_FILE = os.path.join(BASE_DIR, "close.txt")

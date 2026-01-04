@@ -1,0 +1,29 @@
+<div class="card shadow-sm p-3 mb-3">
+  {% if flight.plane_image %}
+  <img src="{{ flight.plane_image }}" alt="{{ flight.plane }}" class="flight-img">
+  {% endif %}
+  
+  <p class="mb-1">
+      <span class="label">Airline:</span> {{ flight.airline }}<br>
+      <span class="label">Flight:</span> {{ flight.callsign }} ({{ flight.plane }})<br>
+      <span class="label">Route:</span> {{ flight.origin }} → {{ flight.destination }}<br>
+
+      {% if flight.distance %}
+      <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
+      {% elif flight.farthest_value %}
+      <span class="label">Distance from Home:</span> {{ flight.farthest_value | round(1) }} mi<br>
+      {% endif %}
+
+      {% if flight.time_scheduled_departure %}
+      <span class="label">Scheduled Departure:</span> {{ flight.time_scheduled_departure | datetime }} UTC<br>
+      {% elif flight.flightaware_hint %}
+      <span class="label">Scheduled Departure:</span> {{ flight.flightaware_hint }}<br>
+      {% endif %}
+  </p>
+
+  {% if flight.flightaware_history %}
+  <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_history }}">
+      <i class="fas fa-external-link-alt"></i> View History on FlightAware
+  </a>
+  {% endif %}
+</div>

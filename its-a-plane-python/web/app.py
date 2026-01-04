@@ -61,6 +61,7 @@ def closest_json():
 def farthest_json():
     return jsonify(load_json(FARTHEST_FILE, []))
 
+
 @app.get("/recent/list")
 def recent_list():
     recent_flights = load_json(RECENT_FILE, [])
@@ -100,6 +101,7 @@ def maps(filename):
     maps_dir = os.path.join(WEB_DIR, "static/maps")
     return send_from_directory(maps_dir, filename)
 
+print(app.url_map)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

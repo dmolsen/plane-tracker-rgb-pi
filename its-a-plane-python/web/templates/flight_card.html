@@ -10,8 +10,7 @@
         <span class="label">Plane Type:</span> {{ flight.plane }}<br>
       {% else %}
         <span class="label">Flight:</span> {{ flight.callsign }} ({{ flight.plane }})<br>
-        <span class="label">Route (IATA):</span> {{ flight.origin }} → {{ flight.destination }}<br>
-        <span class="label">Route (Names):</span> {{ flight.origin_name }} → {{ flight.destination_name }}<br>
+        <span class="label">Route:</span> {{ flight.origin_name }} ({{ flight.origin }}) → {{ flight.destination_name }} ({{ flight.destination }})<br>
         {% if flight.distance %}
           <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
         {% endif %}

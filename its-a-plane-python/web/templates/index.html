@@ -79,13 +79,12 @@
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ recent.airline }}<br>
                 <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
-                <span class="label">Route (IATA):</span> {{ recent.origin }} → {{ recent.destination }}<br>
-                <span class="label">Route (Names):</span> {{ recent.origin_name }} → {{ recent.destination_name }}<br>
+                <span class="label">Route:</span> {{ recent.origin_name }} ({{ recent.origin }}) → {{ recent.destination_name }} ({{ recent.destination }})<br>
                 {% if recent.distance %}
-                    <span class="label">Distance from Home:</span> {{ recent.distance | round(1) }} mi
+                    <span class="label">Distance from Home:</span> {{ recent.distance | round(1) }} mi<br>
                 {% endif %}
                 {% if recent.farthest_value %}
-                    <span class="label">Route Length:</span> {{ recent.farthest_value | round(1) }} mi
+                    <span class="label">Route Length:</span> {{ recent.farthest_value | round(1) }} mi<br>
                 {% endif %}
             </p>
             {% if recent.flightaware_live %}
@@ -109,13 +108,12 @@
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ closest.airline }}<br>
                 <span class="label">Flight:</span> {{ closest.callsign }} ({{ closest.plane }})<br>
-                <span class="label">Route (IATA):</span> {{ closest.origin }} → {{ closest.destination }}<br>
-                <span class="label">Route (Names):</span> {{ closest.origin_name }} → {{ closest.destination_name }}<br>
+                <span class="label">Route:</span> {{ closest.origin_name }} ({{ closest.origin }}) → {{ closest.destination_name }} ({{ closest.destination }})<br>
                 {% if closest.distance %}
-                    <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi
+                    <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi<br>
                 {% endif %}
                 {% if closest.farthest_value %}
-                    <span class="label">Route Length:</span> {{ closest.farthest_value | round(1) }} mi
+                    <span class="label">Route Length:</span> {{ closest.farthest_value | round(1) }} mi<br>
                 {% endif %}
             </p>
             {% if closest.flightaware_history %}
@@ -143,13 +141,12 @@
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ farthest.airline }}<br>
                 <span class="label">Flight:</span> {{ farthest.callsign }} ({{ farthest.plane }})<br>
-                <span class="label">Route (IATA):</span> {{ farthest.origin }} → {{ farthest.destination }}<br>
-                <span class="label">Route (Names):</span> {{ farthest.origin_name }} → {{ farthest.destination_name }}<br>
+                <span class="label">Route:</span> {{ farthest.origin_name }} ({{ farthest.origin }}) → {{ farthest.destination_name }} ({{ farthest.destination }})<br>
                 {% if farthest.distance %}
-                    <span class="label">Distance from Home:</span> {{ farthest.distance | round(1) }} mi
+                    <span class="label">Distance from Home:</span> {{ farthest.distance | round(1) }} mi<br>
                 {% endif %}
                 {% if farthest.farthest_value %}
-                    <span class="label">Route Length:</span> {{ farthest.farthest_value | round(1) }} mi
+                    <span class="label">Route Length:</span> {{ farthest.farthest_value | round(1) }} mi<br>
                 {% endif %}
             </p>
             {% if farthest.flightaware_history %}

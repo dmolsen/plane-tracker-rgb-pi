@@ -13,7 +13,9 @@
         <span class="label">Route (IATA):</span> {{ flight.origin }} → {{ flight.destination }}<br>
         <span class="label">Route (Names):</span> {{ flight.origin_name }} → {{ flight.destination_name }}<br>
         <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
-        <span class="label">Route Length:</span> {{ flight.farthest_value | round(1) }} mi<br>
+        {% if flight.farthest_value %}
+          <span class="label">Route Length:</span> {{ flight.farthest_value | round(1) }} mi<br>
+        {% endif %}
       {% endif %}
   </p>
   {% if flight.airline != 'Private Owner' %}

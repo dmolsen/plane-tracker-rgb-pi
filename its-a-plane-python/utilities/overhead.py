@@ -312,22 +312,22 @@ class Overhead:
         return d
     
 
-    def trace_safe_get(label, d, *keys):
+    def trace_safe_get(d, *keys, default=None, label="TRACE"):
         cur = d
-        print(f"\nTRACE {label}")
+        print(f"\n{label}")
         for key in keys:
             print(f"  AT {type(cur).__name__} → getting {key}")
             if isinstance(cur, dict):
-                cur = cur.get(key)
+                cur = cur.get(key, default)
             elif isinstance(cur, list) and isinstance(key, int):
-                cur = cur[key] if 0 <= key < len(cur) else None
+                cur = cur[key] if 0 <= key < len(cur) else default
             else:
                 print("  ❌ type mismatch")
-                return None
+                return default
             print(f"    → {type(cur).__name__}: {str(cur)[:80]}")
-            if cur is None:
+            if cur is default or cur is None:
                 print("  ❌ became None here")
-                return None
+                return default
         print("  ✅ SUCCESS")
         return cur
 

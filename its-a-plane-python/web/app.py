@@ -13,10 +13,10 @@ app = Flask(
     static_folder=os.path.join(WEB_DIR, "static")
 )
 
-from datetime import datetime
+from datetime import datetime, timezone
 @app.template_filter("datetime")
 def unix_to_datetime(ts):
-    return datetime.utcfromtimestamp(ts)
+    return datetime.fromtimestamp(ts, tz=timezone.utc)
 
 # JSON flight logs (stored outside /web)
 CLOSEST_FILE = os.path.join(BASE_DIR, "close.txt")

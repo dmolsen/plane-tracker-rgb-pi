@@ -62,19 +62,19 @@ def farthest_json():
     return jsonify(load_json(FARTHEST_FILE, []))
 
 @app.get("/recent/list")
-def recent_page():
+def recent_list():
     recent_flights = load_json(RECENT_FILE, [])
     return render_template("recent_list.html", title="Most Recent Flights", flights=recent_flights)
 
 
 @app.get("/closest/list")
-def closest_page():
+def closest_list():
     closest_flights = load_json(CLOSEST_FILE, [])
     return render_template("closest_list.html", title="Closest Flights", flights=closest_flights)
 
 
 @app.get("/farthest/list")
-def farthest_page():
+def farthest_list():
     farthest_flights = load_json(FARTHEST_FILE, [])
     return render_template("farthest_list.html", title="Farthest Flights", flights=farthest_flights)
 

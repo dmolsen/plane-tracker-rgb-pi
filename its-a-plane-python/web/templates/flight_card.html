@@ -1,6 +1,6 @@
 <div class="card shadow-sm p-3 mb-3">
   {% if flight.plane_image %}
-  <img src="{{ flight.plane_image }}" alt="{{ flight.plane }}" class="flight-img">
+    <img src="{{ flight.plane_image }}" alt="{{ flight.plane }}" class="flight-img">
   {% endif %}
   
   <p class="mb-1">
@@ -12,12 +12,6 @@
       <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
       {% elif flight.farthest_value %}
       <span class="label">Distance from Home:</span> {{ flight.farthest_value | round(1) }} mi<br>
-      {% endif %}
-
-      {% if flight.time_scheduled_departure %}
-      <span class="label">Scheduled Departure:</span> {{ flight.time_scheduled_departure | datetime }} UTC<br>
-      {% elif flight.flightaware_hint %}
-      <span class="label">Scheduled Departure:</span> {{ flight.flightaware_hint }}<br>
       {% endif %}
   </p>
 

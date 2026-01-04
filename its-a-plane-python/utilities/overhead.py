@@ -310,6 +310,27 @@ class Overhead:
             else:
                 return default
         return d
+    
+
+    def trace_safe_get(label, d, *keys):
+        cur = d
+        print(f"\nTRACE {label}")
+        for key in keys:
+            print(f"  AT {type(cur).__name__} → getting {key}")
+            if isinstance(cur, dict):
+                cur = cur.get(key)
+            elif isinstance(cur, list) and isinstance(key, int):
+                cur = cur[key] if 0 <= key < len(cur) else None
+            else:
+                print("  ❌ type mismatch")
+                return None
+            print(f"    → {type(cur).__name__}: {str(cur)[:80]}")
+            if cur is None:
+                print("  ❌ became None here")
+                return None
+        print("  ✅ SUCCESS")
+        return cur
+
 
     # Core data grab
     def _grab(self):
@@ -366,17 +387,6 @@ class Overhead:
                         dist_o = distance_to_point(f, origin_lat, origin_lon) if origin_lat else 0
                         dist_d = distance_to_point(f, dest_lat, dest_lon) if dest_lat else 0
 
-                        images = self.safe_get(d, "aircraft", "images")
-
-                        if not images:
-                            print("NO IMAGES for", f.callsign)
-                        else:
-                            print(
-                                "IMAGES FOUND for",
-                                f.callsign,
-                                list(images.keys())
-                            )
-
                         entry = {
                             # --- Airline / Aircraft ---
                             "airline": airline,
@@ -427,7 +437,7 @@ class Overhead:
                             "distance": distance_from_flight_to_home(f),
 
                             # --- Aircraft image (JetPhotos via FR24) ---
-                            "aircraft_image": self.safe_get(
+                            "aircraft_image": self.trace_safe_get(
                                 d, "aircraft", "images", "large", 0, "src"
                             ),
                             "aircraft_image_credit": self.safe_get(

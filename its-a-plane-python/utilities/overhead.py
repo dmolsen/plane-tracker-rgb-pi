@@ -52,7 +52,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "close.txt")
 LOG_FILE_FARTHEST = os.path.join(BASE_DIR, "farthest.txt")
 LOG_FILE_RECENT = os.path.join(BASE_DIR, "recent_flights.json")
-
+LOG_FILE_DEBUG = os.path.join(BASE_DIR, "debug_latest_flight.json")
 
 # --- Utility Functions ---
 
@@ -205,6 +205,29 @@ def log_farthest_flight(entry: dict):
     except Exception as e:
         print("Failed to log farthest flight:", e)
 
+def write_debug_flight(raw_details, flight):
+    try:
+        debug = {
+            "timestamp": email_alerts.get_timestamp(),
+            "callsign": flight.callsign,
+            "flight_object": {
+                "latitude": flight.latitude,
+                "longitude": flight.longitude,
+                "altitude": flight.altitude,
+                "origin_iata": flight.origin_airport_iata,
+                "destination_iata": flight.destination_airport_iata,
+                "airline_iata": flight.airline_iata,
+                "airline_icao": flight.airline_icao,
+            },
+            "raw_api_response": raw_details
+        }
+
+        with open(LOG_FILE_DEBUG, "w", encoding="utf-8") as f:
+            json.dump(debug, f, indent=4)
+
+    except Exception as e:
+        print("Failed to write debug flight:", e)
+
 
 # --- Overhead Class ---
 
@@ -249,6 +272,9 @@ class Overhead:
                     sleep(RATE_LIMIT_DELAY)
                     try:
                         d = self._api.get_flight_details(f)
+
+                        write_debug_flight(d, f)
+
                         plane = self.safe_get(d, "aircraft", "model", "code", default="") or f.airline_icao or ""
                         airline = self.safe_get(d, "airline", "name", default="")
 

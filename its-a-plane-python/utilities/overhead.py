@@ -431,6 +431,7 @@ class Overhead:
                         recent_flights.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
                         recent_flights = recent_flights[:MAX_RECENT_FLIGHTS]
                         safe_write_json(LOG_FILE_RECENT, recent_flights)
+                        map_generator.generate_recent_map(recent_flights, filename="recent.html")
 
                         break
                     except Exception:

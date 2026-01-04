@@ -79,6 +79,11 @@ def farthest_list():
     return render_template("farthest_list.html", title="Farthest Flights", flights=farthest_flights)
 
 
+@app.get("/recent")
+def recent_page():
+    return render_template("recent_map.html")
+
+
 @app.get("/closest")
 def closest_page():
     return render_template("closest_map.html")

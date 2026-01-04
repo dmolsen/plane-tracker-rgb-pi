@@ -456,8 +456,8 @@ class Overhead:
                     except Exception:
                         retries -= 1
 
+            recent_flights = safe_load_json(LOG_FILE_RECENT)
             map_entries = [e for e in recent_flights if is_recent_map_compatible(e)]
-
             if map_entries:
                 map_generator.generate_recent_map(map_entries, filename="recent.html")
 

@@ -64,7 +64,22 @@ def get_session() -> Session:
 # Weather API
 TOMORROW_API_URL = "https://api.tomorrow.io/v4"
 
+# Global variable to track last 429
+_last_rate_limit_hit = None
+_COOLDOWN_SECONDS = 300  # 5 minutes cooldown after 429
+
 def grab_temperature_and_humidity():
+    global _last_rate_limit_hit
+
+    # Check if we are still in cooldown
+    if _last_rate_limit_hit:
+        elapsed = (datetime.now() - _last_rate_limit_hit).total_seconds()
+        if elapsed < _COOLDOWN_SECONDS:
+            logging.warning(f"Skipping API call, cooldown in effect ({int(_COOLDOWN_SECONDS - elapsed)}s left)")
+            return None, None
+        else:
+            _last_rate_limit_hit = None  # reset cooldown
+
     try:
         s = get_session()
         request = s.get(
@@ -78,7 +93,8 @@ def grab_temperature_and_humidity():
         )
 
         if request.status_code == 429:
-            logging.error("Rate limit reached, returning error state")
+            logging.error("Rate limit reached, entering cooldown")
+            _last_rate_limit_hit = datetime.now()
             return None, None
 
         request.raise_for_status()
@@ -91,25 +107,38 @@ def grab_temperature_and_humidity():
             logging.error("Incomplete data from API")
             return None, None
 
-        #print(f"{datetime.now()} [Temp] {datetime.now()}: {temperature}{TEMPERATURE_UNITS}, {humidity}% RH")
         return temperature, humidity
 
     except (RequestException, ValueError) as e:
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if is_dns_error(e):
-            logging.error(
-                f"[{timestamp}] DNS failure resolving api.tomorrow.io - will retry"
-            )
+            logging.error(f"[{timestamp}] DNS failure resolving api.tomorrow.io - will retry")
         else:
-            logging.error(
-                f"[{timestamp}] Temperature request failed: {e}"
-            )
+            logging.error(f"[{timestamp}] Temperature request failed: {e}")
 
         return None, None
         
-        
+# Global variable to track last 429 for forecast
+_last_forecast_rate_limit_hit = None
+_FORECAST_COOLDOWN_SECONDS = 300  # 5 minutes cooldown after 429
+
 def grab_forecast(tag="unknown"):
+    """
+    Fetch forecast data from Tomorrow.io with rate limit protection.
+    Returns a list of intervals or [] on error.
+    """
+    global _last_forecast_rate_limit_hit
+
+    # Check if we are still in cooldown after a 429
+    if _last_forecast_rate_limit_hit:
+        elapsed = (datetime.utcnow() - _last_forecast_rate_limit_hit).total_seconds()
+        if elapsed < _FORECAST_COOLDOWN_SECONDS:
+            logging.warning(f"[Forecast:{tag}] Skipping API call, cooldown in effect "
+                            f"({int(_FORECAST_COOLDOWN_SECONDS - elapsed)}s left)")
+            return []
+        else:
+            _last_forecast_rate_limit_hit = None  # reset cooldown
+
     current_time = datetime.utcnow()
     dt = current_time + timedelta(hours=6)
 
@@ -141,6 +170,12 @@ def grab_forecast(tag="unknown"):
             timeout=(5, 20)
         )
 
+        # Handle 429 rate limiting
+        if resp.status_code == 429:
+            logging.error(f"[Forecast:{tag}] Rate limit reached, entering cooldown")
+            _last_forecast_rate_limit_hit = datetime.utcnow()
+            return []
+
         resp.raise_for_status()
 
         data = resp.json().get("data", {})
@@ -154,23 +189,16 @@ def grab_forecast(tag="unknown"):
             logging.error(f"[Forecast:{tag}] Timelines returned but no intervals")
             return []
 
-        #print(f"{datetime.now()} [Forecast:{tag}] {datetime.now()}: Retrieved {len(intervals)} days")
         return intervals
 
     except RequestException as e:
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         if is_dns_error(e):
-            logging.error(
-                f"[{timestamp}] [Forecast:{tag}] DNS failure resolving api.tomorrow.io - will retry"
-            )
+            logging.error(f"[{timestamp}] [Forecast:{tag}] DNS failure resolving api.tomorrow.io - will retry")
         else:
-            logging.error(
-                f"[{timestamp}] [Forecast:{tag}] API request failed: {e}"
-            )
-
+            logging.error(f"[{timestamp}] [Forecast:{tag}] API request failed: {e}")
         return []
-        
+
     except KeyError as e:
         logging.error(f"[Forecast:{tag}] Unexpected data format: {e}")
         return []

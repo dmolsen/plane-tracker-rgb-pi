@@ -78,7 +78,9 @@
                 <img src="{{ recent.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
             {% endif %}
             <p class="mb-1">
-                <span class="label">Airline:</span> {{ recent.airline }}<br> 
+                {% if recent.airline %}
+                    <span class="label">Airline:</span> {{ recent.airline }}<br> 
+                {% endif %}
                 {% if recent.airline == 'Private owner' %}
                   <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ recent.callsign }}">{{ recent.callsign }}</a><br>
                   <span class="label">Plane Type:</span> {{ recent.plane }}<br>
@@ -117,7 +119,9 @@
                 <img src="{{ closest.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
             {% endif %}
             <p class="mb-1">
-                <span class="label">Airline:</span> {{ closest.airline }}<br> 
+                {% if closest.airline %}
+                    <span class="label">Airline:</span> {{ closest.airline }}<br> 
+                {% endif %}
                 {% if closest.airline == 'Private owner' %}
                     <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ closest.callsign }}">{{ closest.callsign }}</a><br>
                     <span class="label">Plane Type:</span> {{ closest.plane }}<br>
@@ -160,7 +164,9 @@
                 <img src="{{ farthest.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
             {% endif %}
             <p class="mb-1">
-                <span class="label">Airline:</span> {{ farthest.airline }}<br> 
+                {% if farthest.airline %}
+                    <span class="label">Airline:</span> {{ farthest.airline }}<br> 
+                {% endif %}
                 {% if farthest.airline == 'Private owner' %}
                     <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ farthest.callsign }}">{{ farthest.callsign }}</a><br>
                     <span class="label">Plane Type:</span> {{ farthest.plane }}<br>

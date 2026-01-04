@@ -4,7 +4,9 @@
   {% endif %}
   
   <p class="mb-1">
-      <span class="label">Airline:</span> {{ flight.airline }}<br> 
+      {% if flight.airline %}
+        <span class="label">Airline:</span> {{ flight.airline }}<br> 
+      {% endif %}
       {% if flight.airline == 'Private owner' %}
         <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ flight.callsign }}">{{ flight.callsign }}</a><br>
         <span class="label">Plane Type:</span> {{ flight.plane }}<br>

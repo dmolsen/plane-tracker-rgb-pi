@@ -20,10 +20,8 @@
 </header>
 <div class="container mt-4">
     {% if flights %}
-    1
         {% for flight in flights %}
-        2
-            {% include "flight_card.html" %}
+          {% include "flight_card.html" with flight=flight %}
         {% endfor %}
     {% else %}
         <p>No flight data available.</p>

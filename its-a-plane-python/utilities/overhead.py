@@ -297,8 +297,8 @@ class Overhead:
         Thread(target=self._grab).start()
 
     # Safe dict access
-    def safe_get(d, *keys, default=None):
-        """Get a nested value from dicts and lists safely."""
+    def safe_get(self, d, *keys, default=None):
+        """Safely get nested dict/list values."""
         for key in keys:
             if isinstance(d, dict):
                 d = d.get(key, default)
@@ -308,6 +308,8 @@ class Overhead:
                 else:
                     return default
             else:
+                return default
+            if d is None:
                 return default
         return d
     

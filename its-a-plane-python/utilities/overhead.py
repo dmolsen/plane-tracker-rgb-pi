@@ -109,6 +109,19 @@ def distance_from_flight_to_home(flight):
 def distance_to_point(flight, lat, lon):
     return haversine(flight.latitude, flight.longitude, lat, lon)
 
+def is_recent_map_compatible(e):
+    return all(
+        e.get(k) is not None
+        for k in (
+            "plane_latitude",
+            "plane_longitude",
+            "origin_latitude",
+            "origin_longitude",
+            "destination_latitude",
+            "destination_longitude",
+        )
+    )
+
 def build_flightaware_urls(entry):
     """
     Returns a dict with:
@@ -438,11 +451,15 @@ class Overhead:
                         recent_flights.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
                         recent_flights = recent_flights[:MAX_RECENT_FLIGHTS]
                         safe_write_json(LOG_FILE_RECENT, recent_flights)
-                        map_generator.generate_recent_map(recent_flights, filename="recent.html")
 
                         break
                     except Exception:
                         retries -= 1
+
+            map_entries = [e for e in recent_flights if is_recent_map_compatible(e)]
+
+            if map_entries:
+                map_generator.generate_recent_map(map_entries, filename="recent.html")
 
             with self._lock:
                 self._new_data = True

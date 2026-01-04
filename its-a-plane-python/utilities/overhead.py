@@ -366,6 +366,17 @@ class Overhead:
                         dist_o = distance_to_point(f, origin_lat, origin_lon) if origin_lat else 0
                         dist_d = distance_to_point(f, dest_lat, dest_lon) if dest_lat else 0
 
+                        images = self.safe_get(d, "aircraft", "images")
+
+                        if not images:
+                            print("NO IMAGES for", f.callsign)
+                        else:
+                            print(
+                                "IMAGES FOUND for",
+                                f.callsign,
+                                list(images.keys())
+                            )
+
                         entry = {
                             # --- Airline / Aircraft ---
                             "airline": airline,

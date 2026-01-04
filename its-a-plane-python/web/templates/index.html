@@ -79,8 +79,7 @@
             <p class="mb-1">
                 <span class="label">Airline:</span> {{ recent.airline }}<br>
                 <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
-                <span class="label">Route:</span> {{ recent.origin }} → {{ recent.destination }}<br>
-                <span class="label">Departure:</span> {{ recent.time_scheduled_departure | datetime }} UTC<br>
+                <span class="label">Route:</span> {{ recent.origin }} → {{ recent.destination }}
             </p>
             {% if recent.flightaware_live %}
             <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_live }}">

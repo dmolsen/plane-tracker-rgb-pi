@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f6f8; padding-top: 70px; }
+        header { background-color: #0d47a1; color: #fff; position: fixed; top:0; width:100%; padding:15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        header h1 { margin:0; font-size:1.5rem; }
+        .container { max-width:900px; margin:auto; }
+        .label { font-weight:700; }
+        .flight-img { max-width:120px; display:block; margin-bottom:10px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1><i class="fas fa-plane"></i> {{ title }}</h1>
+</header>
+<div class="container mt-4">
+    {% if flights %}
+        {% for flight in flights %}
+            {% include "flight_card.html" %}
+        {% endfor %}
+    {% else %}
+        <p>No flight data available.</p>
+    {% endif %}
+</div>
+</body>
+</html>

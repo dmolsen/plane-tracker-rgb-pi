@@ -18,7 +18,6 @@
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f4f6f8;
-            padding-top: 70px;
         }
 
         header {
@@ -72,18 +71,25 @@
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-clock"></i> Most Recent Flight</h5>
         {% if recent %}
-            {% if recent.plane_image %}
-                <img src="{{ recent.plane_image }}" alt="{{ recent.plane }}" class="flight-img">
+            {% if recent.aircraft_image %}
+                <img src="{{ recent.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
             {% endif %}
             <p class="mb-1">
-                <span class="label">Airline:</span> {{ recent.airline }}<br>
-                <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
-                <span class="label">Route:</span> {{ recent.origin_name }} ({{ recent.origin }}) → {{ recent.destination_name }} ({{ recent.destination }})<br>
+                <span class="label">Airline:</span> {{ recent.airline }}<br> 
+                {% if recent.airline == 'Private owner' %}
+                  <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ recent.callsign }}">{{ recent.callsign }}</a><br>
+                  <span class="label">Plane Type:</span> {{ recent.plane }}<br>
+                {% else %}
+                  <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
+                {% endif %}
+                {% if recent.origin or recent.destination %}
+                  <span class="label">Route:</span> {% if recent.origin %}{{ recent.origin_name }} ({{ recent.origin }}){% else %}Unknown{% endif %} → {% if recent.destination %}{{ recent.destination_name }} ({{ recent.destination }}){% else %}Unknown{% endif %}<br>
+                {% endif %}
                 {% if recent.distance %}
-                    <span class="label">Distance from Home:</span> {{ recent.distance | round(1) }} mi<br>
+                  <span class="label">Distance from Home:</span> {{ recent.distance | round(1) }} mi<br>
                 {% endif %}
                 {% if recent.farthest_value %}
-                    <span class="label">Route Length:</span> {{ recent.farthest_value | round(1) }} mi<br>
+                  <span class="label">Route Length:</span> {{ recent.farthest_value | round(1) }} mi<br>
                 {% endif %}
             </p>
             {% if recent.flightaware_live %}
@@ -104,10 +110,20 @@
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-map-marker-alt"></i> Current Closest Flight</h5>
         {% if closest %}
+            {% if recent.aircraft_image %}
+                <img src="{{ recent.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
+            {% endif %}
             <p class="mb-1">
-                <span class="label">Airline:</span> {{ closest.airline }}<br>
-                <span class="label">Flight:</span> {{ closest.callsign }} ({{ closest.plane }})<br>
-                <span class="label">Route:</span> {{ closest.origin_name }} ({{ closest.origin }}) → {{ closest.destination_name }} ({{ closest.destination }})<br>
+                <span class="label">Airline:</span> {{ closest.airline }}<br> 
+                {% if closest.airline == 'Private owner' %}
+                    <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ closest.callsign }}">{{ closest.callsign }}</a><br>
+                    <span class="label">Plane Type:</span> {{ closest.plane }}<br>
+                {% else %}
+                    <span class="label">Flight:</span> {{ closest.callsign }} ({{ closest.plane }})<br>
+                {% endif %}
+                {% if closest.origin or closest.destination %}
+                    <span class="label">Route:</span> {% if closest.origin %}{{ closest.origin_name }} ({{ closest.origin }}){% else %}Unknown{% endif %} → {% if closest.destination %}{{ closest.destination_name }} ({{ closest.destination }}){% else %}Unknown{% endif %}<br>
+                {% endif %}
                 {% if closest.distance %}
                     <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi<br>
                 {% endif %}
@@ -137,10 +153,20 @@
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-globe"></i> Current Farthest Flight</h5>
         {% if farthest %}
+            {% if recent.aircraft_image %}
+                <img src="{{ recent.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
+            {% endif %}
             <p class="mb-1">
-                <span class="label">Airline:</span> {{ farthest.airline }}<br>
-                <span class="label">Flight:</span> {{ farthest.callsign }} ({{ farthest.plane }})<br>
-                <span class="label">Route:</span> {{ farthest.origin_name }} ({{ farthest.origin }}) → {{ farthest.destination_name }} ({{ farthest.destination }})<br>
+                <span class="label">Airline:</span> {{ farthest.airline }}<br> 
+                {% if farthest.airline == 'Private owner' %}
+                    <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ farthest.callsign }}">{{ farthest.callsign }}</a><br>
+                    <span class="label">Plane Type:</span> {{ farthest.plane }}<br>
+                {% else %}
+                    <span class="label">Flight:</span> {{ farthest.callsign }} ({{ farthest.plane }})<br>
+                {% endif %}
+                {% if farthest.origin or farthest.destination %}
+                    <span class="label">Route:</span> {% if farthest.origin %}{{ farthest.origin_name }} ({{ farthest.origin }}){% else %}Unknown{% endif %} → {% if farthest.destination %}{{ farthest.destination_name }} ({{ farthest.destination }}){% else %}Unknown{% endif %}<br>
+                {% endif %}
                 {% if farthest.distance %}
                     <span class="label">Distance from Home:</span> {{ farthest.distance | round(1) }} mi<br>
                 {% endif %}

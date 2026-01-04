@@ -61,17 +61,6 @@ def closest_json():
 def farthest_json():
     return jsonify(load_json(FARTHEST_FILE, []))
 
-
-@app.get("/closest")
-def closest_page():
-    return render_template("closest_map.html")
-
-
-@app.get("/farthest")
-def farthest_page():
-    return render_template("farthest_map.html")
-
-
 @app.get("/recent/list")
 def recent_page():
     recent_flights = load_json(RECENT_FILE, [])
@@ -88,6 +77,16 @@ def closest_page():
 def farthest_page():
     farthest_flights = load_json(FARTHEST_FILE, [])
     return render_template("farthest_list.html", title="Farthest Flights", flights=farthest_flights)
+
+
+@app.get("/closest")
+def closest_page():
+    return render_template("closest_map.html")
+
+
+@app.get("/farthest")
+def farthest_page():
+    return render_template("farthest_map.html")
 
 
 # Serve PNG map snapshots from /web/static/maps/

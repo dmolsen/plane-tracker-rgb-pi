@@ -344,7 +344,7 @@ class Overhead:
 
         try:
             bounds = self._api.get_bounds(ZONE_DEFAULT)
-            flights = self._api.get_flights(bounds=bounds)
+            flights = self._api.get_flights(bounds=bounds,details=True)
             flights = [f for f in flights if MIN_ALTITUDE < f.altitude < MAX_ALTITUDE]
             flights.sort(key=lambda f: distance_from_flight_to_home(f))
             flights = flights[:MAX_FLIGHT_LOOKUP]

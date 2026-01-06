@@ -65,7 +65,17 @@
 <body>
 
 <header>
-    <h1><i class="fas fa-plane"></i> Flight Tracker Dashboard</h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="mb-0">
+            <i class="fas fa-plane"></i> Flight Tracker Dashboard
+        </h1>
+
+        <button id="screenToggle"
+                class="btn btn-outline-light btn-sm"
+                title="Toggle display">
+            <i id="screenIcon" class="fas fa-lightbulb"></i>
+        </button>
+    </div>
 </header>
 
 <div class="container mt-4">
@@ -74,29 +84,7 @@
     <div class="card shadow-sm p-3">
         <h5><i class="fas fa-clock"></i> Most Recent Flight</h5>
         {% if recent %}
-            {% if recent.aircraft_image %}
-                <img src="{{ recent.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
-            {% endif %}
-            <p class="mb-1">
-                {% if recent.airline %}
-                    <span class="label">Airline:</span> {{ recent.airline }}<br> 
-                {% endif %}
-                {% if recent.airline == 'Private owner' %}
-                  <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ recent.callsign }}">{{ recent.callsign }}</a><br>
-                  <span class="label">Plane Type:</span> {{ recent.plane }}<br>
-                {% else %}
-                  <span class="label">Flight:</span> {{ recent.callsign }} ({{ recent.plane }})<br>
-                {% endif %}
-                {% if recent.origin or recent.destination %}
-                  <span class="label">Route:</span> {% if recent.origin %}{{ recent.origin_name }} ({{ recent.origin }}){% else %}Unknown{% endif %} → {% if recent.destination %}{{ recent.destination_name }} ({{ recent.destination }}){% else %}Unknown{% endif %}<br>
-                {% endif %}
-                {% if recent.distance %}
-                  <span class="label">Distance from Home:</span> {{ recent.distance | round(1) }} mi<br>
-                {% endif %}
-                {% if recent.farthest_value %}
-                  <span class="label">Route Length:</span> {{ recent.farthest_value | round(1) }} mi<br>
-                {% endif %}
-            </p>
+            {% include "flight_detail.html" with flight=recent %}
             {% if recent.flightaware_live %}
             <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_live }}">
                 <i class="fas fa-external-link-alt"></i> View Live on FlightAware
@@ -113,31 +101,9 @@
 
     <!-- Closest Flight -->
     <div class="card shadow-sm p-3">
-        <h5><i class="fas fa-map-marker-alt"></i> Current Closest Flight</h5>
+        <h5><i class="fas fa-map-marker-alt"></i> All-Time Closest Flight</h5>
         {% if closest %}
-            {% if closest.aircraft_image %}
-                <img src="{{ closest.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
-            {% endif %}
-            <p class="mb-1">
-                {% if closest.airline %}
-                    <span class="label">Airline:</span> {{ closest.airline }}<br> 
-                {% endif %}
-                {% if closest.airline == 'Private owner' %}
-                    <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ closest.callsign }}">{{ closest.callsign }}</a><br>
-                    <span class="label">Plane Type:</span> {{ closest.plane }}<br>
-                {% else %}
-                    <span class="label">Flight:</span> {{ closest.callsign }} ({{ closest.plane }})<br>
-                {% endif %}
-                {% if closest.origin or closest.destination %}
-                    <span class="label">Route:</span> {% if closest.origin %}{{ closest.origin_name }} ({{ closest.origin }}){% else %}Unknown{% endif %} → {% if closest.destination %}{{ closest.destination_name }} ({{ closest.destination }}){% else %}Unknown{% endif %}<br>
-                {% endif %}
-                {% if closest.distance %}
-                    <span class="label">Distance from Home:</span> {{ closest.distance | round(1) }} mi<br>
-                {% endif %}
-                {% if closest.farthest_value %}
-                    <span class="label">Route Length:</span> {{ closest.farthest_value | round(1) }} mi<br>
-                {% endif %}
-            </p>
+            {% include "flight_detail.html" with flight=closest %}
             {% if closest.flightaware_history %}
             <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_history }}">
                 <i class="fas fa-external-link-alt"></i> View History on FlightAware
@@ -158,31 +124,9 @@
 
     <!-- Farthest Flight -->
     <div class="card shadow-sm p-3">
-        <h5><i class="fas fa-globe"></i> Current Farthest Flight</h5>
+        <h5><i class="fas fa-globe"></i> All-Time Farthest Flight</h5>
         {% if farthest %}
-            {% if farthest.aircraft_image %}
-                <img src="{{ farthest.aircraft_image }}" alt="{{ recent.plane }}" class="flight-img">
-            {% endif %}
-            <p class="mb-1">
-                {% if farthest.airline %}
-                    <span class="label">Airline:</span> {{ farthest.airline }}<br> 
-                {% endif %}
-                {% if farthest.airline == 'Private owner' %}
-                    <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ farthest.callsign }}">{{ farthest.callsign }}</a><br>
-                    <span class="label">Plane Type:</span> {{ farthest.plane }}<br>
-                {% else %}
-                    <span class="label">Flight:</span> {{ farthest.callsign }} ({{ farthest.plane }})<br>
-                {% endif %}
-                {% if farthest.origin or farthest.destination %}
-                    <span class="label">Route:</span> {% if farthest.origin %}{{ farthest.origin_name }} ({{ farthest.origin }}){% else %}Unknown{% endif %} → {% if farthest.destination %}{{ farthest.destination_name }} ({{ farthest.destination }}){% else %}Unknown{% endif %}<br>
-                {% endif %}
-                {% if farthest.distance %}
-                    <span class="label">Distance from Home:</span> {{ farthest.distance | round(1) }} mi<br>
-                {% endif %}
-                {% if farthest.farthest_value %}
-                    <span class="label">Route Length:</span> {{ farthest.farthest_value | round(1) }} mi<br>
-                {% endif %}
-            </p>
+            {% include "flight_detail.html" with flight=farthest %}
             {% if farthest.flightaware_history %}
             <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_history }}">
                 <i class="fas fa-external-link-alt"></i> View History on FlightAware
@@ -204,5 +148,33 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    async function fetchScreenState() {
+        const res = await fetch("/screen");
+        const data = await res.json();
+        updateIcon(data.screen);
+    }
+
+    function updateIcon(state) {
+        const icon = document.getElementById("screenIcon");
+        if (state === "on") {
+            icon.className = "fas fa-lightbulb";
+        } else {
+            icon.className = "far fa-lightbulb";
+        }
+    }
+
+    document.getElementById("screenToggle").addEventListener("click", async () => {
+        const res = await fetch("/screen/toggle", { method: "POST" });
+        const data = await res.json();
+        updateIcon(data.screen);
+    });
+
+    // Poll every 5 seconds to stay in sync
+    setInterval(fetchScreenState, 5000);
+    fetchScreenState();
+</script>
+
 </body>
 </html>

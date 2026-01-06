@@ -1,4 +1,7 @@
 import sys
+import json
+import os
+
 from datetime import datetime
 from setup import frames
 from utilities.animator import Animator
@@ -17,6 +20,15 @@ from scenes.date import DateScene
 from rgbmatrix import graphics
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
+
+def read_screen_state():
+    try:
+        with open(SCREEN_STATE_FILE, "r") as f:
+            return json.load(f).get("screen", "on")
+    except Exception:
+        return "on"
 
 def flight_updated(flights_a, flights_b):
     get_callsigns = lambda flights: [(f["callsign"], f["direction"]) for f in flights]
@@ -48,25 +60,20 @@ except (ModuleNotFoundError, NameError):
     HAT_PWM_ENABLED = True
     NIGHT_BRIGHTNESS = False
 
-def adjust_brightness(matrix):
-    if NIGHT_BRIGHTNESS is False:
-        return  # Do nothing if NIGHT_BRIGHTNESS is False
-        
-    # Redraw screen every frame
-    now = datetime.now().time().replace(second=0, microsecond=0)  # Extract only hours and minutes
-    night_start_time = NIGHT_START.time().replace(second=0, microsecond=0)
-    night_end_time = NIGHT_END.time().replace(second=0, microsecond=0)
+def is_night_time():
+    if not NIGHT_BRIGHTNESS:
+        return False
 
-    # Check if current time is after NIGHT_END and before NIGHT_START
-    if night_end_time <= now < night_start_time:
-        new_brightness = BRIGHTNESS
+    now = datetime.now().time().replace(second=0, microsecond=0)
+    night_start = NIGHT_START.time().replace(second=0, microsecond=0)
+    night_end = NIGHT_END.time().replace(second=0, microsecond=0)
+
+    if night_start < night_end:
+        return night_start <= now < night_end
     else:
-        new_brightness = BRIGHTNESS_NIGHT
-        
-    # Check if the brightness has changed
-    if matrix.brightness != new_brightness:
-        # Update the brightness
-        matrix.brightness = new_brightness
+        # crosses midnight
+        return now >= night_start or now < night_end
+
         
 class Display(
     TemperatureScene,
@@ -160,13 +167,20 @@ class Display(
                 self.reset_scene()
 
     @Animator.KeyFrame.add(1)
-    def sync(self, count):
-        # Redraw screen every frame
-        _ = self.matrix.SwapOnVSync(self.canvas)
-        
-    
-        # Adjust brightness
-        adjust_brightness(self.matrix)
+        def sync(self, count):
+            screen_state = read_screen_state()
+
+            if screen_state == "off":
+                # Blank display but keep loop alive
+                self.canvas.Clear()
+                if self.matrix.brightness != 0:
+                    self.matrix.brightness = 0
+            else:
+                # Restore brightness logic
+                adjust_brightness(self.matrix)
+
+            _ = self.matrix.SwapOnVSync(self.canvas)
+
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):

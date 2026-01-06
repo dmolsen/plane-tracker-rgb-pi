@@ -23,6 +23,20 @@ CLOSEST_FILE = os.path.join(BASE_DIR, "close.txt")
 FARTHEST_FILE = os.path.join(BASE_DIR, "farthest.txt")
 RECENT_FILE = os.path.join(BASE_DIR, "recent_flights.json")
 
+SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
+
+def read_screen_state():
+    try:
+        with open(SCREEN_STATE_FILE, "r") as f:
+            return json.load(f).get("screen", "on")
+    except Exception:
+        return "on"
+
+def write_screen_state(state):
+    with open(SCREEN_STATE_FILE, "w") as f:
+        json.dump({"screen": state}, f)
+
+
 def load_json(path, default):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -93,6 +107,31 @@ def closest_page():
 @app.get("/farthest")
 def farthest_page():
     return render_template("farthest_map.html")
+
+
+@app.get("/screen")
+def get_screen():
+    return jsonify({"screen": read_screen_state()})
+
+
+@app.post("/screen/on")
+def screen_on():
+    write_screen_state("on")
+    return jsonify({"screen": "on"})
+
+
+@app.post("/screen/off")
+def screen_off():
+    write_screen_state("off")
+    return jsonify({"screen": "off"})
+
+
+@app.post("/screen/toggle")
+def screen_toggle():
+    current = read_screen_state()
+    new_state = "off" if current == "on" else "on"
+    write_screen_state(new_state)
+    return jsonify({"screen": new_state})
 
 
 # Serve PNG map snapshots from /web/static/maps/

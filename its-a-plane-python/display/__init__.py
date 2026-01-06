@@ -20,8 +20,12 @@ from scenes.date import DateScene
 from rgbmatrix import graphics
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
+# -------------------------------------------------
+# Paths / state
+# -------------------------------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
+
 
 def read_screen_state():
     try:
@@ -30,16 +34,16 @@ def read_screen_state():
     except Exception:
         return "on"
 
+
 def flight_updated(flights_a, flights_b):
     get_callsigns = lambda flights: [(f["callsign"], f["direction"]) for f in flights]
-    updatable_a = set(get_callsigns(flights_a))
-    updatable_b = set(get_callsigns(flights_b))
-
-    return updatable_a == updatable_b
+    return set(get_callsigns(flights_a)) == set(get_callsigns(flights_b))
 
 
+# -------------------------------------------------
+# Config
+# -------------------------------------------------
 try:
-    # Attempt to load config data
     from config import (
         BRIGHTNESS,
         GPIO_SLOWDOWN,
@@ -48,32 +52,35 @@ try:
         NIGHT_END,
         NIGHT_BRIGHTNESS,
     )
-    # Parse NIGHT_START and NIGHT_END from strings to datetime objects
+
     NIGHT_START = datetime.strptime(NIGHT_START, "%H:%M")
     NIGHT_END = datetime.strptime(NIGHT_END, "%H:%M")
 
-except (ModuleNotFoundError, NameError):
-    # If there's no config data
+except Exception:
     BRIGHTNESS = 100
     GPIO_SLOWDOWN = 1
     HAT_PWM_ENABLED = True
     NIGHT_BRIGHTNESS = False
 
+
 def is_night_time():
+    """Night mode = HARD OFF"""
     if not NIGHT_BRIGHTNESS:
         return False
 
     now = datetime.now().time().replace(second=0, microsecond=0)
-    night_start = NIGHT_START.time().replace(second=0, microsecond=0)
-    night_end = NIGHT_END.time().replace(second=0, microsecond=0)
+    start = NIGHT_START.time()
+    end = NIGHT_END.time()
 
-    if night_start < night_end:
-        return night_start <= now < night_end
+    if start < end:
+        return start <= now < end
     else:
-        # crosses midnight
-        return now >= night_start or now < night_end
+        return now >= start or now < end
 
-        
+
+# -------------------------------------------------
+# Display
+# -------------------------------------------------
 class Display(
     TemperatureScene,
     FlightDetailsScene,
@@ -87,125 +94,119 @@ class Display(
     Animator,
 ):
     def __init__(self):
-        # Setup Display
+        # --- Matrix setup ---
         options = RGBMatrixOptions()
-        options.hardware_mapping = "adafruit-hat-pwm" if HAT_PWM_ENABLED else "adafruit-hat"
+        options.hardware_mapping = (
+            "adafruit-hat-pwm" if HAT_PWM_ENABLED else "adafruit-hat"
+        )
         options.rows = 32
         options.cols = 64
         options.chain_length = 1
         options.parallel = 1
-        options.row_address_type = 0
-        options.multiplexing = 0
         options.pwm_bits = 11
         options.brightness = BRIGHTNESS
         options.pwm_lsb_nanoseconds = 130
         options.led_rgb_sequence = "RGB"
-        options.pixel_mapper_config = ""
-        options.show_refresh_rate = 0
         options.gpio_slowdown = GPIO_SLOWDOWN
         options.disable_hardware_pulsing = True
         options.drop_privileges = True
-        self.matrix = RGBMatrix(options=options)
 
-        # Setup canvas
+        self.matrix = RGBMatrix(options=options)
         self.canvas = self.matrix.CreateFrameCanvas()
         self.canvas.Clear()
 
-        # Data to render
+        # --- State ---
         self._data_index = 0
         self._data = []
+        self._data_all_looped = False
 
-        # Start Looking for planes
+        self._last_screen_state = "on"
+
+        # --- Plane data ---
         self.overhead = Overhead()
         self.overhead.grab_data()
 
-        # Initalise animator and scenes
+        # --- Animator / scenes ---
         super().__init__()
-
-        # Overwrite any default settings from
-        # Animator or Scenes
         self.delay = frames.PERIOD
 
+    # -------------------------------------------------
+    # Drawing helpers
+    # -------------------------------------------------
     def draw_square(self, x0, y0, x1, y1, colour):
         for x in range(x0, x1):
-            _ = graphics.DrawLine(self.canvas, x, y0, x, y1, colour)
-            
+            graphics.DrawLine(self.canvas, x, y0, x, y1, colour)
 
+    # -------------------------------------------------
+    # Animator hooks
+    # -------------------------------------------------
     @Animator.KeyFrame.add(0)
     def clear_screen(self):
-        # First operation after
-        # a screen reset
         self.canvas.Clear()
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
     def check_for_loaded_data(self, count):
-        if self.overhead.new_data:
-            # Check if there's data
-            there_is_data = len(self._data) > 0 or not self.overhead.data_is_empty
+        if not self.overhead.new_data:
+            return
 
-            # this marks self.overhead.data as no longer new
-            new_data = self.overhead.data
+        there_is_data = len(self._data) > 0 or not self.overhead.data_is_empty
+        new_data = self.overhead.data
+        data_is_different = not flight_updated(self._data, new_data)
 
-            # See if this matches the data already on the screen
-            # This test only checks if it's 2 lists with the same
-            # callsigns, regardless or order
-            data_is_different = not flight_updated(self._data, new_data)
+        if data_is_different:
+            self._data = new_data
+            self._data_index = 0
+            self._data_all_looped = False
 
-            if data_is_different:
-                self._data_index = 0
-                self._data_all_looped = False
-                self._data = new_data
+        if there_is_data and data_is_different:
+            self.reset_scene()
 
-            # Only reset if there's flight data already
-            # on the screen, of if there's some new
-            # data available to draw which is different
-            # from the current data
-            reset_required = there_is_data and data_is_different
-
-            if reset_required:
-                self.reset_scene()
-
+    # -------------------------------------------------
+    # 🔑 CRITICAL FIX: hard gate rendering
+    # -------------------------------------------------
     @Animator.KeyFrame.add(1)
     def sync(self, count):
         screen_state = read_screen_state()
         night = is_night_time()
+        effective_state = "off" if night else screen_state
 
-        if screen_state == "off" or night:
-            # HARD OFF
+        # Detect OFF → ON transition
+        if effective_state != self._last_screen_state:
+            if effective_state == "on":
+                # Reset timeline + scenes
+                self.reset_scene()
+                self._data_index = 0
+                self._data_all_looped = False
+
+        self._last_screen_state = effective_state
+
+        if effective_state == "off":
+            # HARD OFF: nothing draws
             self.canvas.Clear()
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
-        else:
-            # HARD ON
-            if self.matrix.brightness != BRIGHTNESS:
-                self.matrix.brightness = BRIGHTNESS
+            self.matrix.SwapOnVSync(self.canvas)
+            return
 
-        _ = self.matrix.SwapOnVSync(self.canvas)
+        # HARD ON
+        if self.matrix.brightness != BRIGHTNESS:
+            self.matrix.brightness = BRIGHTNESS
 
+        self.matrix.SwapOnVSync(self.canvas)
 
-
+    # -------------------------------------------------
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):
-        # Only grab data if we're not already searching
-        # for planes, or if there's new data available
-        # which hasn't been displayed.
-        #
-        # We also need wait until all previously grabbed
-        # data has been looped through the display.
-        #
-        # Last, if our internal store of the data
-        # is empty, try and grab data
         if not (self.overhead.processing and self.overhead.new_data) and (
             self._data_all_looped or len(self._data) <= 1
         ):
             self.overhead.grab_data()
 
+    # -------------------------------------------------
     def run(self):
         try:
-            # Start loop
             print("Press CTRL-C to stop")
             self.play()
-
         except KeyboardInterrupt:
-            print("Exiting\n")
+            print("Exiting")
             sys.exit(0)

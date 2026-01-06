@@ -44,7 +44,6 @@ try:
         BRIGHTNESS,
         GPIO_SLOWDOWN,
         HAT_PWM_ENABLED,
-        BRIGHTNESS_NIGHT,
         NIGHT_START,
         NIGHT_END,
         NIGHT_BRIGHTNESS,

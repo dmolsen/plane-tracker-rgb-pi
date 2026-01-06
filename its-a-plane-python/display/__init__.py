@@ -144,18 +144,37 @@ class Display(
         screen_state = read_screen_state()
         night = is_night_time()
 
+        # Track previous state
+        if not hasattr(self, "_screen_was_off"):
+            self._screen_was_off = False
+
+        # -------------------------
+        # SCREEN OFF
+        # -------------------------
         if screen_state == "off" or night:
-            # Do not draw anything; ensure brightness is 0
             self.canvas.Clear()
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
-        else:
-            # Display normally
+            self._screen_was_off = True
+            _ = self.matrix.SwapOnVSync(self.canvas)
+            return
+
+        # -------------------------
+        # SCREEN TURNING BACK ON
+        # -------------------------
+        if self._screen_was_off:
+            self._screen_was_off = False
+
+            # Restore brightness
             if self.matrix.brightness != BRIGHTNESS:
                 self.matrix.brightness = BRIGHTNESS
 
-        # Swap frame buffer
-        self.matrix.SwapOnVSync(self.canvas)
+            # 🔥 THIS IS THE CRITICAL LINE
+            self.reset_scene()
+
+        # Normal draw
+        _ = self.matrix.SwapOnVSync(self.canvas)
+
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):

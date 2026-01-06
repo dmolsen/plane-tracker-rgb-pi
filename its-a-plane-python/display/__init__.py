@@ -167,19 +167,22 @@ class Display(
                 self.reset_scene()
 
     @Animator.KeyFrame.add(1)
-        def sync(self, count):
-            screen_state = read_screen_state()
+    def sync(self, count):
+        screen_state = read_screen_state()
+        night = is_night_time()
 
-            if screen_state == "off":
-                # Blank display but keep loop alive
-                self.canvas.Clear()
-                if self.matrix.brightness != 0:
-                    self.matrix.brightness = 0
-            else:
-                # Restore brightness logic
-                adjust_brightness(self.matrix)
+        if screen_state == "off" or night:
+            # HARD OFF
+            self.canvas.Clear()
+            if self.matrix.brightness != 0:
+                self.matrix.brightness = 0
+        else:
+            # HARD ON
+            if self.matrix.brightness != BRIGHTNESS:
+                self.matrix.brightness = BRIGHTNESS
 
-            _ = self.matrix.SwapOnVSync(self.canvas)
+        _ = self.matrix.SwapOnVSync(self.canvas)
+
 
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)

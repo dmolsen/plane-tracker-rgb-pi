@@ -34,16 +34,24 @@ class TemperatureScene(object):
         )
 
     def _is_screen_off(self) -> bool:
-        # You’re using brightness=0 as the “screen off” signal.
-        # getattr default keeps this safe if matrix is missing early in init.
+        # Using brightness=0 as the “screen off” signal.
         return getattr(self.matrix, "brightness", 1) == 0
+
+    def _flights_active(self) -> bool:
+        # When flights are being shown, self._data is non-empty.
+        return len(getattr(self, "_data", [])) > 0
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 1)
     def temperature(self, count):
         # --- Screen off gating ---
         if self._is_screen_off():
-            # Mark that we need a redraw when it turns back on.
             self._was_screen_off = True
+            return
+
+        # If flights are currently on-screen, do NOT draw temperature.
+        # Mark redraw so it returns immediately when flights clear.
+        if self._flights_active():
+            self._redraw_temp = True
             return
 
         # If we were previously off and are now on, force a redraw
@@ -54,26 +62,19 @@ class TemperatureScene(object):
         now = datetime.now()
         retry_interval_on_error = 60
 
-        # If flights are currently being shown (self._data not empty),
-        # we allow drawing from cache but avoid API fetching to reduce churn.
-        suppress_fetch = len(getattr(self, "_data", [])) > 0
-
         # Time since last successful update
         seconds_since_update = (
             (now - self._last_updated).total_seconds()
-            if self._last_updated else TEMPERATURE_REFRESH_SECONDS
+            if self._last_updated
+            else TEMPERATURE_REFRESH_SECONDS
         )
 
-        # Decide whether to fetch (only if not suppressing)
+        # Decide whether to fetch
         need_fetch = (
-            (not suppress_fetch)
-            and (
-                seconds_since_update >= TEMPERATURE_REFRESH_SECONDS
-                or (self._cached_temp is None and seconds_since_update >= retry_interval_on_error)
-            )
+            seconds_since_update >= TEMPERATURE_REFRESH_SECONDS
+            or (self._cached_temp is None and seconds_since_update >= retry_interval_on_error)
         )
 
-        # Fetch new data only when needed
         if need_fetch:
             current_temperature, current_humidity = grab_temperature_and_humidity()
 
@@ -82,11 +83,10 @@ class TemperatureScene(object):
                 self._last_updated = now
                 self._redraw_temp = True
             else:
-                # If we have nothing cached yet, show ERR once.
+                # If we have nothing cached yet, show ERR once and retry in ~60s
                 if self._cached_temp is None:
                     self._cached_temp = (None, None)
                     self._redraw_temp = True
-                    # Set last_updated so we retry in ~60s, not immediately spam.
                     self._last_updated = now - timedelta(
                         seconds=TEMPERATURE_REFRESH_SECONDS - retry_interval_on_error
                     )
@@ -95,16 +95,11 @@ class TemperatureScene(object):
                     return
 
         # If nothing to draw, exit
-        if not self._redraw_temp:
+        if not self._redraw_temp or self._cached_temp is None:
             return
 
-        # Clear previous temperature area (always before drawing)
+        # Clear previous temperature area
         self.draw_square(40, 0, 64, 5, colours.BLACK)
-
-        # Draw either cached temp or ERR
-        if self._cached_temp is None:
-            # Shouldn’t happen, but be safe
-            return
 
         current_temperature, current_humidity = self._cached_temp
 

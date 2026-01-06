@@ -44,6 +44,9 @@ class DaysForecastScene(object):
     def _is_screen_off(self) -> bool:
         return getattr(self.matrix, "brightness", 1) == 0
 
+    def _flights_active(self) -> bool:
+        return len(getattr(self, "_data", [])) > 0
+
     # -----------------------------
     # ICON LOADER (CACHED)
     # -----------------------------
@@ -60,9 +63,9 @@ class DaysForecastScene(object):
 
             image.thumbnail((ICON_SIZE, ICON_SIZE), resample)
             image = image.convert("RGB")
+
             self._icon_cache[icon_name] = image
             return image
-
         except Exception:
             # Cache failure to prevent repeated retries & flicker
             self._icon_cache[icon_name] = None
@@ -78,38 +81,35 @@ class DaysForecastScene(object):
             self._was_screen_off = True
             return
 
+        # --- Flights active gating (prevents forecast overlaying flights) ---
+        if self._flights_active():
+            # Ensure we redraw immediately when flights clear
+            self._redraw_forecast = True
+            return
+
         # If we were previously off and are now on, force a redraw
         if self._was_screen_off:
             self._was_screen_off = False
             self._redraw_forecast = True
 
-        now_time = datetime.now().replace(microsecond=0).time()
+        now = datetime.now()
+        now_time = now.replace(microsecond=0).time()
 
         # Redraw on night start/end (brightness changes)
         if now_time == NIGHT_START_TIME.time() or now_time == NIGHT_END_TIME.time():
             self._redraw_forecast = True
 
-        current_hour = datetime.now().hour
+        current_hour = now.hour
 
-        # If flights are showing, don't fetch forecast (avoid churn),
-        # but allow redraw from cache.
-        suppress_fetch = len(getattr(self, "_data", [])) > 0
+        # Decide if we need to fetch forecast
+        need_fetch = (self._cached_forecast is None) or (self._last_hour != current_hour)
 
-        # Decide if we need to fetch (only if not suppressing)
-        need_fetch = (
-            (not suppress_fetch)
-            and (self._cached_forecast is None or self._last_hour != current_hour)
-        )
-
-        # Decide if we need to redraw
+        # Decide if we need to redraw (hour tick or forced redraw)
         need_redraw = (self._last_hour != current_hour) or self._redraw_forecast
 
-        if not need_redraw and not need_fetch:
+        # If we don't need either, bail
+        if not need_fetch and not need_redraw:
             return
-
-        # Clear previous area whenever we redraw
-        # (this prevents partial/stale icon pixels)
-        self.draw_square(0, 12, 64, 32, colours.BLACK)
 
         # Update hour marker
         self._last_hour = current_hour
@@ -122,25 +122,28 @@ class DaysForecastScene(object):
             if forecast:
                 self._cached_forecast = forecast
             else:
-                # If fetch failed and nothing cached, don't draw anything
+                # If fetch failed and nothing cached, try again next tick
                 if not self._cached_forecast:
-                    self._redraw_forecast = True  # try again later
+                    self._redraw_forecast = True
                     return
-        forecast = self._cached_forecast
 
+        forecast = self._cached_forecast
         if not forecast:
             self._redraw_forecast = True
             return
 
+        # -------------------------
+        # DRAW
+        # -------------------------
+        # Clear previous area whenever we draw
+        self.draw_square(0, 12, 64, 32, colours.BLACK)
+
         self._redraw_forecast = False
 
-        # -------------------------
-        # RENDER FORECAST
-        # -------------------------
         offset = 1
         space_width = screen.WIDTH // 3
 
-        # Only render first 3 days (your layout assumes 3 columns)
+        # Only render first 3 days (layout assumes 3 columns)
         for day in forecast[:3]:
             day_name = datetime.fromisoformat(day["startTime"].rstrip("Z")).strftime("%a")
             icon_name = day["values"]["weatherCodeFullDay"]

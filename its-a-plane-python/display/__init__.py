@@ -26,6 +26,8 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
 
+self._paused = False
+self._last_effective_state = "on"
 
 def read_screen_state():
     try:
@@ -170,25 +172,32 @@ class Display(
         night = is_night_time()
         effective_state = "off" if night else screen_state
 
-        # Detect OFF → ON transition
-        if effective_state != self._last_screen_state:
-            if effective_state == "on":
-                # Reset timeline + scenes
+        # -------- STATE CHANGE DETECTION --------
+        if effective_state != self._last_effective_state:
+            if effective_state == "off":
+                self._paused = True
+
+            else:
+                # OFF → ON: HARD RESET EVERYTHING
+                self._paused = False
                 self.reset_scene()
                 self._data_index = 0
                 self._data_all_looped = False
 
-        self._last_screen_state = effective_state
+            self._last_effective_state = effective_state
 
-        if effective_state == "off":
-            # HARD OFF: nothing draws
+        # -------- HARD OFF --------
+        if self._paused:
             self.canvas.Clear()
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
             self.matrix.SwapOnVSync(self.canvas)
+
+            # 🔴 CRITICAL: STOP Animator frame progression
+            self._next_frame = 0
             return
 
-        # HARD ON
+        # -------- HARD ON --------
         if self.matrix.brightness != BRIGHTNESS:
             self.matrix.brightness = BRIGHTNESS
 

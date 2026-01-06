@@ -26,9 +26,6 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
 
-self._paused = False
-self._last_effective_state = "on"
-
 def read_screen_state():
     try:
         with open(SCREEN_STATE_FILE, "r") as f:
@@ -131,6 +128,9 @@ class Display(
         # --- Animator / scenes ---
         super().__init__()
         self.delay = frames.PERIOD
+
+        self._paused = False
+        self._last_effective_state = "on"
 
     # -------------------------------------------------
     # Drawing helpers

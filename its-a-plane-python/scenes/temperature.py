@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
-import colorsys
 from rgbmatrix import graphics
 from utilities.animator import Animator
-from setup import colours, fonts, frames, screen
+from setup import colours, fonts, frames
 from utilities.temperature import grab_temperature_and_humidity
 from config import NIGHT_START, NIGHT_END
 
@@ -10,8 +9,10 @@ from config import NIGHT_START, NIGHT_END
 TEMPERATURE_REFRESH_SECONDS = 600
 TEMPERATURE_FONT = fonts.small
 TEMPERATURE_FONT_HEIGHT = 6
+
 NIGHT_START_TIME = datetime.strptime(NIGHT_START, "%H:%M")
 NIGHT_END_TIME = datetime.strptime(NIGHT_END, "%H:%M")
+
 
 class TemperatureScene(object):
     def __init__(self):
@@ -19,9 +20,11 @@ class TemperatureScene(object):
         self._last_temperature = None
         self._last_temperature_str = None
         self._last_updated = None
-        self._cached_temp = None
-        self._cached_humidity = None
+        self._cached_temp = None  # (temp, humidity)
         self._redraw_temp = True
+
+        # Track screen on/off transitions to force a redraw when turning back on
+        self._was_screen_off = False
 
     def colour_gradient(self, colour_A, colour_B, ratio):
         return graphics.Color(
@@ -30,14 +33,30 @@ class TemperatureScene(object):
             int(colour_A.blue + ((colour_B.blue - colour_A.blue) * ratio)),
         )
 
+    def _is_screen_off(self) -> bool:
+        # You’re using brightness=0 as the “screen off” signal.
+        # getattr default keeps this safe if matrix is missing early in init.
+        return getattr(self.matrix, "brightness", 1) == 0
+
     @Animator.KeyFrame.add(frames.PER_SECOND * 1)
     def temperature(self, count):
-        # Do NOTHING if screen is off (prevents flashing + scene corruption)
-        if getattr(self.matrix, "brightness", 1) == 0:
+        # --- Screen off gating ---
+        if self._is_screen_off():
+            # Mark that we need a redraw when it turns back on.
+            self._was_screen_off = True
             return
+
+        # If we were previously off and are now on, force a redraw
+        if self._was_screen_off:
+            self._was_screen_off = False
+            self._redraw_temp = True
 
         now = datetime.now()
         retry_interval_on_error = 60
+
+        # If flights are currently being shown (self._data not empty),
+        # we allow drawing from cache but avoid API fetching to reduce churn.
+        suppress_fetch = len(getattr(self, "_data", [])) > 0
 
         # Time since last successful update
         seconds_since_update = (
@@ -45,11 +64,12 @@ class TemperatureScene(object):
             if self._last_updated else TEMPERATURE_REFRESH_SECONDS
         )
 
+        # Decide whether to fetch (only if not suppressing)
         need_fetch = (
-            seconds_since_update >= TEMPERATURE_REFRESH_SECONDS or
-            (
-                self._cached_temp is None and
-                seconds_since_update >= retry_interval_on_error
+            (not suppress_fetch)
+            and (
+                seconds_since_update >= TEMPERATURE_REFRESH_SECONDS
+                or (self._cached_temp is None and seconds_since_update >= retry_interval_on_error)
             )
         )
 
@@ -62,28 +82,39 @@ class TemperatureScene(object):
                 self._last_updated = now
                 self._redraw_temp = True
             else:
-                # Failed fetch: do NOT redraw unless nothing has ever rendered
+                # If we have nothing cached yet, show ERR once.
                 if self._cached_temp is None:
+                    self._cached_temp = (None, None)
                     self._redraw_temp = True
-                return
+                    # Set last_updated so we retry in ~60s, not immediately spam.
+                    self._last_updated = now - timedelta(
+                        seconds=TEMPERATURE_REFRESH_SECONDS - retry_interval_on_error
+                    )
+                else:
+                    # Keep cached data; don’t flicker.
+                    return
 
-        # If nothing changed visually, stop
-        if not self._redraw_temp or self._cached_temp is None:
+        # If nothing to draw, exit
+        if not self._redraw_temp:
+            return
+
+        # Clear previous temperature area (always before drawing)
+        self.draw_square(40, 0, 64, 5, colours.BLACK)
+
+        # Draw either cached temp or ERR
+        if self._cached_temp is None:
+            # Shouldn’t happen, but be safe
             return
 
         current_temperature, current_humidity = self._cached_temp
 
-        # Clear previous temperature area
-        self.draw_square(40, 0, 64, 5, colours.BLACK)
-
-        # Format display
-        display_str = f"{round(current_temperature)}°"
-        humidity_ratio = current_humidity / 100.0
-        temp_colour = self.colour_gradient(
-            colours.WHITE,
-            colours.DARK_BLUE,
-            humidity_ratio
-        )
+        if current_temperature is None or current_humidity is None:
+            display_str = "ERR"
+            temp_colour = colours.RED
+        else:
+            display_str = f"{round(current_temperature)}°"
+            humidity_ratio = max(0.0, min(1.0, current_humidity / 100.0))
+            temp_colour = self.colour_gradient(colours.WHITE, colours.DARK_BLUE, humidity_ratio)
 
         # Center text
         font_character_width = 5
@@ -103,4 +134,3 @@ class TemperatureScene(object):
         self._last_temperature_str = display_str
         self._last_temperature = current_temperature
         self._redraw_temp = False
-

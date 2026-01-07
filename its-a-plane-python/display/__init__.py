@@ -196,8 +196,8 @@ class Display(
                 self.reset_scene()
 
     @Animator.KeyFrame.add(1, run_while_paused=True)
-    def sync(self, count):
-        screen_state = read_screen_state()  # "on" or "off"
+    def zz_present(self, count):
+        screen_state = read_screen_state()
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
 
@@ -218,7 +218,6 @@ class Display(
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
 
-            # IMPORTANT: capture the returned canvas
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
             return
 
@@ -226,11 +225,14 @@ class Display(
         if self._effective_off:
             self._effective_off = False
             self.resume()
+            self.canvas.Clear()  # avoid a stale/ghost frame on resume
 
         if self.matrix.brightness != target_brightness:
             self.matrix.brightness = target_brightness
 
-        # IMPORTANT: capture the returned canvas
+        # PROOF PIXEL (top-left green)
+        self.canvas.SetPixel(0, 0, 0, 255, 0)
+
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)

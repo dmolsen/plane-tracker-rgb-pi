@@ -1,101 +1,106 @@
 from datetime import datetime
-from utilities.temperature import grab_forecast
+
 from utilities.animator import Animator
 from setup import colours, fonts, frames
 from rgbmatrix import graphics
-import logging
-from config import CLOCK_FORMAT, NIGHT_END, NIGHT_START
+from config import CLOCK_FORMAT, NIGHT_START, NIGHT_END
 
-# Configure logging
-#logging.basicConfig(filename='myapp.log', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# Setup
+# -----------------------------
+# CONFIG
+# -----------------------------
 CLOCK_FONT = fonts.large_bold
-CLOCK_POSITION = (0, 11)
+CLOCK_POSITION = (0, 11)  # (x, baseline_y)
+
 DAY_COLOUR = colours.LIGHT_ORANGE
 NIGHT_COLOUR = colours.LIGHT_BLUE
 
+# Clear region for the clock (top-left)
+CLOCK_CLEAR_X0 = 0
+CLOCK_CLEAR_Y0 = 0
+CLOCK_CLEAR_X1 = 40
+CLOCK_CLEAR_Y1 = 12
 
-# Convert NIGHT_START and NIGHT_END to datetime objects 
-NIGHT_START_TIME = datetime.strptime(NIGHT_START, "%H:%M") 
-NIGHT_END_TIME = datetime.strptime(NIGHT_END, "%H:%M")
+# Parse night window once
+_NIGHT_START = datetime.strptime(NIGHT_START, "%H:%M").time()
+_NIGHT_END = datetime.strptime(NIGHT_END, "%H:%M").time()
+
+
+def _is_night_now(now_time) -> bool:
+    """True if now_time is inside NIGHT_START..NIGHT_END (handles crossing midnight)."""
+    if _NIGHT_START < _NIGHT_END:
+        return _NIGHT_START <= now_time < _NIGHT_END
+    return now_time >= _NIGHT_START or now_time < _NIGHT_END
+
+
+def _format_time(dt: datetime) -> str:
+    if str(CLOCK_FORMAT).lower() == "24hr":
+        return dt.strftime("%H:%M")
+    s = dt.strftime("%I:%M")
+    return s.lstrip("0") or "0:00"
+
 
 class ClockScene(object):
     def __init__(self):
         super().__init__()
-        self._last_time = None
-        self.today_sunrise = None
-        self.today_sunset = None
-        self.last_fetch_date = None  # Store the date of the last forecast fetch
+        self._last_time_str = None
+        self._redraw_time = True
 
-    def calculate_sunrise_sunset(self):
-        now = datetime.now()
+        # Track flight/home transitions so we can clear/redraw cleanly
+        self._was_showing_flights = False
 
-        try:
-            # Only fetch forecast if it's a new day or if no cached data
-            if self.last_fetch_date != now.date():
-                forecast = grab_forecast(tag="ClockScene")
-                if not forecast:  # None or empty list
-                    logging.error("Forecast data missing or API error.")
-                    return None, None
-
-                for day in forecast:
-                    forecast_date = day['startTime'][:10]
-                    if forecast_date == now.strftime('%Y-%m-%d'):
-                        # Parse UTC sunrise and sunset times
-                        utc_sunrise = datetime.strptime(day['values']['sunriseTime'], '%Y-%m-%dT%H:%M:%SZ')
-                        utc_sunset = datetime.strptime(day['values']['sunsetTime'], '%Y-%m-%dT%H:%M:%SZ')
-
-                        # Cache values
-                        self.today_sunrise = utc_sunrise
-                        self.today_sunset = utc_sunset
-                        self.last_fetch_date = now.date()
-
-        except Exception as e:
-            logging.error(f"Error fetching forecast: {e}")
-            return None, None
-
-        return self.today_sunrise, self.today_sunset
+    def _clear_clock_area(self):
+        self.draw_square(
+            CLOCK_CLEAR_X0,
+            CLOCK_CLEAR_Y0,
+            CLOCK_CLEAR_X1,
+            CLOCK_CLEAR_Y1,
+            colours.BLACK,
+        )
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 1)
     def clock(self, count):
-        if len(self._data):
-            self._redraw_time = True
+        # Flights active?
+        showing_flights = len(getattr(self, "_data", [])) > 0
+
+        # If flights just started, clear clock once so it doesn't linger
+        if showing_flights and not self._was_showing_flights:
+            self._was_showing_flights = True
+            self._clear_clock_area()
             return
 
+        # If flights still active, do not draw the clock
+        if showing_flights:
+            return
+
+        # If flights just ended, force redraw immediately
+        if (not showing_flights) and self._was_showing_flights:
+            self._was_showing_flights = False
+            self._redraw_time = True
+            self._last_time_str = None
+            self._clear_clock_area()
+
         now = datetime.now()
-        clock_format = "%l:%M" if CLOCK_FORMAT == "12hr" else "%H:%M"
-        current_time = now.strftime(clock_format)
+        current_time_str = _format_time(now)
 
-        utc_sunrise, utc_sunset = self.calculate_sunrise_sunset()
-        now_utc = datetime.utcnow()
+        # Only redraw if minute changed or forced
+        if (current_time_str == self._last_time_str) and (not self._redraw_time):
+            return
 
-        if utc_sunrise is None or utc_sunset is None:
-            clock_color = colours.RED
-        elif utc_sunrise <= now_utc < utc_sunset:
-            clock_color = DAY_COLOUR
-        else:
-            clock_color = NIGHT_COLOUR
+        # Clear old clock area
+        self._clear_clock_area()
 
-        if self._last_time and (self._last_time != current_time or getattr(self, "_redraw_time", False)):
-            graphics.DrawText(
-                self.canvas,
-                CLOCK_FONT,
-                CLOCK_POSITION[0],
-                CLOCK_POSITION[1],
-                colours.BLACK,
-                self._last_time,
-            )
+        # Choose colour based on night window (purely a color choice now)
+        clock_colour = NIGHT_COLOUR if _is_night_now(now.time().replace(second=0, microsecond=0)) else DAY_COLOUR
 
-        self._last_time = current_time
-
+        # Draw new time
         graphics.DrawText(
             self.canvas,
             CLOCK_FONT,
             CLOCK_POSITION[0],
             CLOCK_POSITION[1],
-            clock_color,
-            current_time,
+            clock_colour,
+            current_time_str,
         )
 
+        self._last_time_str = current_time_str
         self._redraw_time = False

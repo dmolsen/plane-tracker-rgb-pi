@@ -11,27 +11,41 @@ class LoadingPulseScene(object):
     def __init__(self):
         super().__init__()
 
-    @Animator.KeyFrame.add(2)
+    def _clear_pixel(self):
+        self.canvas.SetPixel(BLINKER_POSITION[0], BLINKER_POSITION[1], 0, 0, 0)
+
+    @Animator.KeyFrame.add(0)
+    def reset_loading_pulse(self):
+        """
+        Called on reset_scene() (startup, resume-from-off, flight index change).
+        Ensures the pulse pixel isn't left in a half-lit state.
+        """
+        self._clear_pixel()
+
+    @Animator.KeyFrame.add(2)  # run_while_paused stays False by default (important)
     def loading_pulse(self, count):
-        reset_count = True
-        if self.overhead.processing:
-            # Calculate the brightness scaler and
-            # ensure it's within a sensible range
-            brightness = (1 - (count / BLINKER_STEPS)) / 2
-            brightness = 0 if (brightness < 0 or brightness > 1) else brightness
+        # If overhead is missing for any reason, just keep it cleared.
+        if not hasattr(self, "overhead"):
+            self._clear_pixel()
+            return True
 
-            self.canvas.SetPixel(
-                BLINKER_POSITION[0],
-                BLINKER_POSITION[1],
-                brightness * BLINKER_COLOUR.red,
-                brightness * BLINKER_COLOUR.green,
-                brightness * BLINKER_COLOUR.blue,
-            )
+        # If not processing, keep cleared
+        if not self.overhead.processing:
+            self._clear_pixel()
+            return True
 
-            # Only count 0 -> (BLINKER_STEPS - 1)
-            reset_count = count == (BLINKER_STEPS - 1)
-        else:
-            # Not processing, blank the square
-            self.canvas.SetPixel(BLINKER_POSITION[0], BLINKER_POSITION[1], 0, 0, 0)
+        # Calculate brightness scaler
+        brightness = (1 - (count / BLINKER_STEPS)) / 2
+        if brightness < 0 or brightness > 1:
+            brightness = 0
 
-        return reset_count
+        self.canvas.SetPixel(
+            BLINKER_POSITION[0],
+            BLINKER_POSITION[1],
+            int(brightness * BLINKER_COLOUR.red),
+            int(brightness * BLINKER_COLOUR.green),
+            int(brightness * BLINKER_COLOUR.blue),
+        )
+
+        # Only count 0 -> (BLINKER_STEPS - 1)
+        return count == (BLINKER_STEPS - 1)

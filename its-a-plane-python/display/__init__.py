@@ -1,7 +1,8 @@
 import sys
-import json
 import os
+import json
 from datetime import datetime
+
 from setup import frames
 from utilities.animator import Animator
 from utilities.overhead import Overhead
@@ -19,69 +20,106 @@ from scenes.date import DateScene
 from rgbmatrix import graphics
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
+
+# -----------------------------
+# Screen State IPC (file)
+# -----------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
 
 
 def read_screen_state():
+    """
+    Returns "on" or "off".
+    If file missing/bad, default to "on".
+    """
     try:
-        with open(SCREEN_STATE_FILE, "r") as f:
-            return json.load(f).get("screen", "on")
+        with open(SCREEN_STATE_FILE, "r", encoding="utf-8") as f:
+            v = json.load(f).get("screen", "on")
+            return v if v in ("on", "off") else "on"
     except Exception:
         return "on"
 
 
 def flight_updated(flights_a, flights_b):
-    get_callsigns = lambda flights: [(f["callsign"], f["direction"]) for f in flights]
-    return set(get_callsigns(flights_a)) == set(get_callsigns(flights_b))
+    get_callsigns = lambda flights: [(f.get("callsign"), f.get("direction")) for f in flights]
+    updatable_a = set(get_callsigns(flights_a))
+    updatable_b = set(get_callsigns(flights_b))
+    return updatable_a == updatable_b
 
 
+# -----------------------------
+# Config
+# -----------------------------
 try:
-    # Load config data
     from config import (
         BRIGHTNESS,
+        BRIGHTNESS_NIGHT,
         GPIO_SLOWDOWN,
         HAT_PWM_ENABLED,
         NIGHT_START,
         NIGHT_END,
         NIGHT_BRIGHTNESS,
     )
-    NIGHT_START = datetime.strptime(NIGHT_START, "%H:%M")
-    NIGHT_END = datetime.strptime(NIGHT_END, "%H:%M")
-
-except (ModuleNotFoundError, NameError):
+    NIGHT_START_DT = datetime.strptime(NIGHT_START, "%H:%M")
+    NIGHT_END_DT = datetime.strptime(NIGHT_END, "%H:%M")
+except Exception:
     BRIGHTNESS = 100
+    BRIGHTNESS_NIGHT = 50
     GPIO_SLOWDOWN = 1
     HAT_PWM_ENABLED = True
     NIGHT_BRIGHTNESS = False
+    NIGHT_START_DT = datetime.strptime("22:00", "%H:%M")
+    NIGHT_END_DT = datetime.strptime("06:00", "%H:%M")
 
 
 def is_night_time():
     if not NIGHT_BRIGHTNESS:
         return False
+
     now = datetime.now().time().replace(second=0, microsecond=0)
-    night_start = NIGHT_START.time()
-    night_end = NIGHT_END.time()
+    night_start = NIGHT_START_DT.time().replace(second=0, microsecond=0)
+    night_end = NIGHT_END_DT.time().replace(second=0, microsecond=0)
+
     if night_start < night_end:
         return night_start <= now < night_end
-    else:
-        return now >= night_start or now < night_end
+
+    # crosses midnight
+    return now >= night_start or now < night_end
+
+
+def desired_brightness():
+    """
+    If NIGHT_BRIGHTNESS is True and currently night, use BRIGHTNESS_NIGHT.
+    Otherwise use BRIGHTNESS.
+
+    If you want "night = fully off", set BRIGHTNESS_NIGHT = 0 in config.
+    """
+    if NIGHT_BRIGHTNESS and is_night_time():
+        return int(BRIGHTNESS_NIGHT)
+    return int(BRIGHTNESS)
 
 
 class Display(
+    # “Home” widgets:
     TemperatureScene,
-    FlightDetailsScene,
+    ClockScene,
+    DateScene,
+    DaysForecastScene,
+
+    # “Flight” widgets:
     FlightLogoScene,
     JourneyScene,
-    LoadingPulseScene,
+    FlightDetailsScene,
     PlaneDetailsScene,
-    ClockScene,
-    DaysForecastScene,
-    DateScene,
+
+    # status widget:
+    LoadingPulseScene,
+
     Animator,
 ):
     def __init__(self):
-        # --- Setup LED Matrix ---
+        # Setup Display
         options = RGBMatrixOptions()
         options.hardware_mapping = "adafruit-hat-pwm" if HAT_PWM_ENABLED else "adafruit-hat"
         options.rows = 32
@@ -91,30 +129,38 @@ class Display(
         options.row_address_type = 0
         options.multiplexing = 0
         options.pwm_bits = 11
-        options.brightness = BRIGHTNESS
+        options.brightness = int(BRIGHTNESS)
         options.pwm_lsb_nanoseconds = 130
         options.led_rgb_sequence = "RGB"
         options.pixel_mapper_config = ""
         options.show_refresh_rate = 0
-        options.gpio_slowdown = GPIO_SLOWDOWN
+        options.gpio_slowdown = int(GPIO_SLOWDOWN)
         options.disable_hardware_pulsing = True
         options.drop_privileges = True
 
         self.matrix = RGBMatrix(options=options)
-        self.canvas = self.matrix.CreateFrameCanvas()
 
-        # Flight data
+        # Setup canvas
+        self.canvas = self.matrix.CreateFrameCanvas()
+        self.canvas.Clear()
+
+        # Data to render
         self._data_index = 0
         self._data = []
-        self._data_all_looped = True
+        self._data_all_looped = False
 
-        # Plane lookup
+        # Start Looking for planes
         self.overhead = Overhead()
         self.overhead.grab_data()
 
-        # Animator/scenes
+        # Initialize animator + scenes
         super().__init__()
+
+        # Animator timing
         self.delay = frames.PERIOD
+
+        # Track current “off” state so we don’t thrash pause/resume
+        self._effective_off = False
 
     def draw_square(self, x0, y0, x1, y1, colour):
         for x in range(x0, x1):
@@ -122,6 +168,7 @@ class Display(
 
     @Animator.KeyFrame.add(0)
     def clear_screen(self):
+        # First operation after a scene reset
         self.canvas.Clear()
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
@@ -136,45 +183,48 @@ class Display(
                 self._data_all_looped = False
                 self._data = new_data
 
-            if there_is_data and data_is_different:
+            reset_required = there_is_data and data_is_different
+            if reset_required:
                 self.reset_scene()
 
-    @Animator.KeyFrame.add(1)
+    @Animator.KeyFrame.add(1, run_while_paused=True)
     def sync(self, count):
-        screen_state = read_screen_state()
-        night = is_night_time()
+        """
+        The ONLY place we apply off/night policy.
 
-        # Track previous state
-        if not hasattr(self, "_screen_was_off"):
-            self._screen_was_off = False
+        When “off”, we pause the animator (scenes stop running).
+        We still run sync() so the matrix stays blank + brightness 0.
+        """
 
-        # -------------------------
-        # SCREEN OFF
-        # -------------------------
-        if screen_state == "off" or night:
+        screen_state = read_screen_state()  # "on" or "off"
+        target_brightness = desired_brightness()
+
+        # Treat brightness <= 0 as "off" (supports BRIGHTNESS_NIGHT=0)
+        should_be_off = (screen_state == "off") or (target_brightness <= 0)
+
+        if should_be_off:
+            if not self._effective_off:
+                self._effective_off = True
+                self.pause()
+
+            # Hard blank every tick while off so nothing “flashes”
             self.canvas.Clear()
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
-            self._screen_was_off = True
+
             _ = self.matrix.SwapOnVSync(self.canvas)
             return
 
-        # -------------------------
-        # SCREEN TURNING BACK ON
-        # -------------------------
-        if self._screen_was_off:
-            self._screen_was_off = False
+        # --- ON MODE ---
+        if self._effective_off:
+            # Resume triggers Animator to run divisor==0 keyframes once (clean reset)
+            self._effective_off = False
+            self.resume()
 
-            # Restore brightness
-            if self.matrix.brightness != BRIGHTNESS:
-                self.matrix.brightness = BRIGHTNESS
+        if self.matrix.brightness != target_brightness:
+            self.matrix.brightness = target_brightness
 
-            # 🔥 THIS IS THE CRITICAL LINE
-            self.reset_scene()
-
-        # Normal draw
         _ = self.matrix.SwapOnVSync(self.canvas)
-
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):

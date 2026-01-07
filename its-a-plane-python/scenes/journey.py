@@ -60,12 +60,14 @@ ARROW_CLEAR = (
     ARROW_POINT_POSITION[1] + (ARROW_HEIGHT // 2),
 )
 
+
 def _unit_label() -> str:
     if str(DISTANCE_UNITS).lower() == "imperial":
         return "mi"
     if str(DISTANCE_UNITS).lower() == "metric":
         return "km"
     return "u"
+
 
 def _safe_num(v, default=0.0) -> float:
     try:
@@ -75,6 +77,7 @@ def _safe_num(v, default=0.0) -> float:
     except Exception:
         return default
 
+
 def _safe_int(v, default=0) -> int:
     try:
         if v is None:
@@ -82,6 +85,7 @@ def _safe_int(v, default=0) -> int:
         return int(float(v))
     except Exception:
         return default
+
 
 def _safe_delay_minutes(real_ts, sched_ts):
     # Both are expected to be epoch seconds
@@ -91,6 +95,7 @@ def _safe_delay_minutes(real_ts, sched_ts):
         return (float(real_ts) - float(sched_ts)) / 60.0
     except Exception:
         return None
+
 
 def _delay_colour(minutes):
     # Returns a colour based on delay minutes (None -> grey)
@@ -157,9 +162,7 @@ class JourneyScene(object):
         if not f:
             return
 
-        # Create a render key so we redraw when:
-        # - plane index changes
-        # - route/distance values change
+        # Create a render key so we redraw when the flight or relevant values change
         render_key = (
             self._data_index,
             f.get("origin"),
@@ -192,19 +195,20 @@ class JourneyScene(object):
         origin_color = _delay_colour(dep_delay)
         destination_color = _delay_colour(arr_delay)
 
-        # --- ROUTE TEXT (origin → destination)
-        text_length = graphics.DrawText(
-            self.canvas,
-            JOURNEY_FONT_SELECTED if origin == JOURNEY_CODE_SELECTED else JOURNEY_FONT,
+        # --- ROUTE TEXT (origin destination)
+        origin_font = JOURNEY_FONT_SELECTED if origin == JOURNEY_CODE_SELECTED else JOURNEY_FONT
+        dest_font = JOURNEY_FONT_SELECTED if destination == JOURNEY_CODE_SELECTED else JOURNEY_FONT
+
+        text_length = self.draw_text(
+            origin_font,
             JOURNEY_POSITION[0],
             JOURNEY_HEIGHT,
             origin_color,
             origin if origin else JOURNEY_BLANK_FILLER,
         )
 
-        _ = graphics.DrawText(
-            self.canvas,
-            JOURNEY_FONT_SELECTED if destination == JOURNEY_CODE_SELECTED else JOURNEY_FONT,
+        _ = self.draw_text(
+            dest_font,
             JOURNEY_POSITION[0] + text_length + JOURNEY_SPACING + 1,
             JOURNEY_HEIGHT,
             destination_color,
@@ -229,8 +233,7 @@ class JourneyScene(object):
         # origin distance
         x = distance_origin_x
         for ch in distance_origin_text:
-            x += graphics.DrawText(
-                self.canvas,
+            x += self.draw_text(
                 DISTANCE_FONT,
                 x,
                 DISTANCE_POSITION[1],
@@ -241,8 +244,7 @@ class JourneyScene(object):
         # destination distance
         x = distance_destination_x
         for ch in distance_destination_text:
-            x += graphics.DrawText(
-                self.canvas,
+            x += self.draw_text(
                 DISTANCE_FONT,
                 x,
                 DISTANCE_POSITION[1],

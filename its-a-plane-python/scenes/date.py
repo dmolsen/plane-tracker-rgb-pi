@@ -2,7 +2,6 @@ from datetime import datetime
 
 from utilities.animator import Animator
 from setup import colours, fonts, frames
-from rgbmatrix import graphics
 
 # -----------------------------
 # CONFIG
@@ -73,8 +72,8 @@ class DateScene(object):
         # Clear old date area
         self._clear_date_area()
 
-        graphics.DrawText(
-            self.canvas,
+        # IMPORTANT: draw via Display helper so present() sees it
+        self.draw_text(
             DATE_FONT,
             DATE_POSITION[0],
             DATE_POSITION[1],

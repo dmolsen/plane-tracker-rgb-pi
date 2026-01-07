@@ -1,6 +1,5 @@
 from utilities.animator import Animator
 from setup import colours, fonts, screen
-from rgbmatrix import graphics
 
 # Setup
 FLIGHT_NO_DISTANCE_FROM_TOP = 24
@@ -65,9 +64,9 @@ class FlightDetailsScene(object):
             if airline:
                 flight_no = f"{airline} {flight_no}"
 
+            # IMPORTANT: draw via Display helper so present() sees it
             for ch in flight_no:
-                ch_length = graphics.DrawText(
-                    self.canvas,
+                ch_length = self.draw_text(
                     FLIGHT_NO_FONT,
                     self.flight_position + flight_no_text_length,
                     FLIGHT_NO_DISTANCE_FROM_TOP,
@@ -78,17 +77,7 @@ class FlightDetailsScene(object):
 
         # Draw "N/M" pager if multiple flights
         if len(self._data) > 1:
-            # Clear pager area (already cleared by band clear, but keep explicit)
-            self.draw_square(
-                DATA_INDEX_POSITION[0],
-                FLIGHT_NO_DISTANCE_FROM_TOP - FLIGHT_NO_TEXT_HEIGHT,
-                screen.WIDTH,
-                FLIGHT_NO_DISTANCE_FROM_TOP,
-                colours.BLACK,
-            )
-
-            pager_len = graphics.DrawText(
-                self.canvas,
+            pager_len = self.draw_text(
                 DATA_INDEX_FONT,
                 DATA_INDEX_POSITION[0],
                 DATA_INDEX_POSITION[1],

@@ -2,7 +2,6 @@ from datetime import datetime
 
 from utilities.animator import Animator
 from setup import colours, fonts, frames
-from rgbmatrix import graphics
 from config import CLOCK_FORMAT, NIGHT_START, NIGHT_END
 
 # -----------------------------
@@ -44,8 +43,6 @@ class ClockScene(object):
         super().__init__()
         self._last_time_str = None
         self._redraw_time = True
-
-        # Track flight/home transitions so we can clear/redraw cleanly
         self._was_showing_flights = False
 
     def _clear_clock_area(self):
@@ -92,9 +89,8 @@ class ClockScene(object):
         # Choose colour based on night window (purely a color choice now)
         clock_colour = NIGHT_COLOUR if _is_night_now(now.time().replace(second=0, microsecond=0)) else DAY_COLOUR
 
-        # Draw new time
-        graphics.DrawText(
-            self.canvas,
+        # IMPORTANT: draw via Display helper so it marks the frame dirty
+        self.draw_text(
             CLOCK_FONT,
             CLOCK_POSITION[0],
             CLOCK_POSITION[1],

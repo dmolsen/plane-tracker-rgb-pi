@@ -94,6 +94,7 @@ class TemperatureScene(object):
                 self._last_updated = now
                 self._needs_redraw = True
             else:
+                # First failure: render ERR once, then retry ~60s later
                 if self._cached_temp is None:
                     self._cached_temp = (None, None)
                     self._last_updated = now - timedelta(
@@ -107,8 +108,6 @@ class TemperatureScene(object):
         # -----------------------------
         # RENDER
         # -----------------------------
-        self._clear_temp_area()
-
         temp, humidity = self._cached_temp
 
         if temp is None or humidity is None:
@@ -119,9 +118,13 @@ class TemperatureScene(object):
             ratio = max(0.0, min(1.0, humidity / 100.0))
             colour = self._colour_gradient(colours.WHITE, colours.DARK_BLUE, ratio)
 
+        # If unchanged visually, stop
         if display_str == self._last_drawn_str:
             self._needs_redraw = False
             return
+
+        # Clear only when we know we are going to draw something new
+        self._clear_temp_area()
 
         # Center text in temp region
         font_char_width = 5
@@ -129,8 +132,8 @@ class TemperatureScene(object):
         middle_x = (TEMP_CLEAR_X0 + TEMP_CLEAR_X1) // 2
         start_x = middle_x - text_width // 2
 
-        graphics.DrawText(
-            self.canvas,
+        # IMPORTANT: draw via Display helper so present() sees it
+        self.draw_text(
             TEMPERATURE_FONT,
             start_x,
             TEMPERATURE_FONT_HEIGHT,

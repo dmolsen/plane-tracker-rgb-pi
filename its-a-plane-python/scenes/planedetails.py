@@ -1,4 +1,3 @@
-from rgbmatrix import graphics
 from utilities.animator import Animator
 from setup import colours, fonts, screen
 from config import DISTANCE_UNITS
@@ -82,7 +81,6 @@ class PlaneDetailsScene(object):
 
         # Construct strings
         plane_name_text = f"{plane_name} " if plane_name else ""
-        # distance formatted safely
         try:
             distance_text = f"{float(distance):.2f}{units}"
         except Exception:
@@ -94,9 +92,8 @@ class PlaneDetailsScene(object):
         # Clear band every frame for clean scroll
         self._clear_band()
 
-        # Draw plane name then distance/direction directly after it
-        plane_name_width = graphics.DrawText(
-            self.canvas,
+        # IMPORTANT: use self.draw_text (not graphics.DrawText)
+        plane_name_width = self.draw_text(
             PLANE_FONT,
             self.plane_position,
             PLANE_DISTANCE_FROM_TOP,
@@ -104,8 +101,7 @@ class PlaneDetailsScene(object):
             plane_name_text,
         )
 
-        distance_width = graphics.DrawText(
-            self.canvas,
+        distance_width = self.draw_text(
             PLANE_FONT,
             self.plane_position + plane_name_width,
             PLANE_DISTANCE_FROM_TOP,
@@ -126,11 +122,9 @@ class PlaneDetailsScene(object):
                 self._data_index = (self._data_index + 1) % len(self._data)
                 self._data_all_looped = (self._data_index == 0) or self._data_all_looped
 
-                # Keep everything in sync for the new flight
                 if hasattr(self, "reset_scene"):
                     self.reset_scene()
 
     @Animator.KeyFrame.add(0)
     def reset_scrolling(self):
-        # Called by reset_scene() (divisor==0 keyframes)
         self.plane_position = screen.WIDTH

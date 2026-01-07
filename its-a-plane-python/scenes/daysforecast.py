@@ -5,7 +5,6 @@ from PIL import Image
 from utilities.animator import Animator
 from setup import colours, fonts, frames, screen
 from utilities.temperature import grab_forecast
-from rgbmatrix import graphics
 
 # -----------------------------
 # CONFIG / LAYOUT
@@ -32,11 +31,9 @@ FORECAST_CLEAR_Y1 = 32
 
 # Icons directory
 _THIS_DIR = os.path.dirname(__file__)
-
 # If your icons are in: scenes/icons/
 ICONS_DIR = os.path.join(_THIS_DIR, "icons")
-
-# If your icons are in: project-root/icons/, uncomment this instead:
+# If your icons are in: project-root/icons/, uncomment:
 # ICONS_DIR = os.path.join(os.path.dirname(_THIS_DIR), "icons")
 
 
@@ -54,6 +51,7 @@ class DaysForecastScene(object):
         self._was_showing_flights = False
 
     def _clear_forecast_region(self):
+        # Display.draw_square marks dirty for us
         self.draw_square(
             FORECAST_CLEAR_X0,
             FORECAST_CLEAR_Y0,
@@ -64,6 +62,9 @@ class DaysForecastScene(object):
 
     def _get_icon(self, icon_name: str):
         """Load+resize icon once; return cached PIL RGB image or None."""
+        if not icon_name:
+            return None
+
         if icon_name in self._icon_cache:
             return self._icon_cache[icon_name]
 
@@ -99,17 +100,17 @@ class DaysForecastScene(object):
     def day(self, count):
         showing_flights = len(getattr(self, "_data", [])) > 0
 
-        # --- If flights just started, clear forecast once so it doesn't linger/overlay
+        # Flights just started -> clear our region once so it doesn't linger
         if showing_flights and not self._was_showing_flights:
             self._was_showing_flights = True
             self._clear_forecast_region()
             return
 
-        # --- If flights still active, don't draw or fetch forecast
+        # Flights active -> do nothing (no draw, no fetch)
         if showing_flights:
             return
 
-        # --- If flights just ended, force redraw so forecast returns immediately
+        # Flights just ended -> force redraw so forecast returns immediately
         if (not showing_flights) and self._was_showing_flights:
             self._was_showing_flights = False
             self._redraw_forecast = True
@@ -124,17 +125,16 @@ class DaysForecastScene(object):
         if (not need_fetch) and (not self._redraw_forecast):
             return
 
-        # Fetch if needed
+        # Fetch if needed (preserve cache on failure)
         if need_fetch:
             forecast = grab_forecast(tag="days")
             if forecast:
                 self._cached_forecast = forecast
                 self._last_fetch_hour = now.hour
-            # if fetch fails, keep cached_forecast as-is
 
         forecast = self._cached_forecast
         if not forecast:
-            # nothing to draw yet; try again later
+            # Nothing to draw yet; try again later
             self._redraw_forecast = True
             return
 
@@ -148,9 +148,13 @@ class DaysForecastScene(object):
         space_width = screen.WIDTH // 3
 
         for day in forecast[:3]:
-            day_name = datetime.fromisoformat(day["startTime"].rstrip("Z")).strftime("%a")
+            start_time = day.get("startTime", "")
+            try:
+                day_name = datetime.fromisoformat(start_time.rstrip("Z")).strftime("%a")
+            except Exception:
+                day_name = "--"
 
-            values = day.get("values", {})
+            values = day.get("values", {}) or {}
             icon_name = values.get("weatherCodeFullDay")
 
             min_temp_val = values.get("temperatureMin")
@@ -159,6 +163,7 @@ class DaysForecastScene(object):
             min_temp = f"{min_temp_val:.0f}" if isinstance(min_temp_val, (int, float)) else "--"
             max_temp = f"{max_temp_val:.0f}" if isinstance(max_temp_val, (int, float)) else "--"
 
+            # Your extrasmall font is ~4px wide; keep your original math
             min_temp_width = len(min_temp) * 4
             max_temp_width = len(max_temp) * 4
 
@@ -169,15 +174,17 @@ class DaysForecastScene(object):
             icon_x = offset + (space_width - ICON_SIZE) // 2
             day_x = offset + (space_width - 12) // 2 + 1
 
-            graphics.DrawText(self.canvas, TEXT_FONT, day_x, DAY_POSITION, DAY_COLOUR, day_name)
+            # IMPORTANT: use Display helpers so we mark the frame dirty
+            self.draw_text(TEXT_FONT, day_x, DAY_POSITION, DAY_COLOUR, day_name)
 
             if icon_name:
                 icon_img = self._get_icon(str(icon_name))
                 if icon_img is not None:
-                    self.canvas.SetImage(icon_img, icon_x, ICON_POSITION)
+                    # IMPORTANT: draw to backbuffer canvas via Display helper
+                    self.set_image(icon_img, icon_x, ICON_POSITION)
 
-            graphics.DrawText(self.canvas, TEXT_FONT, max_temp_x, TEMP_POSITION, MAX_T_COLOUR, max_temp)
-            graphics.DrawText(self.canvas, TEXT_FONT, min_temp_x, TEMP_POSITION, MIN_T_COLOUR, min_temp)
+            self.draw_text(TEXT_FONT, max_temp_x, TEMP_POSITION, MAX_T_COLOUR, max_temp)
+            self.draw_text(TEXT_FONT, min_temp_x, TEMP_POSITION, MIN_T_COLOUR, min_temp)
 
             offset += space_width
 

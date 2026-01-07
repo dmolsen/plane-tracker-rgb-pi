@@ -34,11 +34,18 @@ class FlightLogoScene(object):
 
     def _clear_logo_area(self):
         self.draw_square(
-            LOGO_CLEAR_X0, LOGO_CLEAR_Y0, LOGO_CLEAR_X1, LOGO_CLEAR_Y1, colours.BLACK
+            LOGO_CLEAR_X0,
+            LOGO_CLEAR_Y0,
+            LOGO_CLEAR_X1,
+            LOGO_CLEAR_Y1,
+            colours.BLACK,
         )
 
     def _get_logo(self, icao: str):
         """Load+resize once; return cached PIL RGB image or None."""
+        if not icao:
+            icao = DEFAULT_IMAGE
+
         if icao in self._logo_cache:
             return self._logo_cache[icao]
 
@@ -54,7 +61,6 @@ class FlightLogoScene(object):
                 self._logo_cache[icao] = None
                 return None
         except Exception:
-            # Any other open error
             self._logo_cache[icao] = None
             return None
 
@@ -105,7 +111,7 @@ class FlightLogoScene(object):
 
         img = self._get_logo(str(icao))
         if img is not None:
-            # Draw at 0,0 (top-left)
-            self.canvas.SetImage(img, 0, 0)
+            # IMPORTANT: draw via Display helper (marks dirty + correct target)
+            self.set_image(img, 0, 0)
 
         self._last_icao_drawn = icao

@@ -26,12 +26,12 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions
 # DEBUG SETTINGS
 # =============================
 DEBUG = True
+DEBUG_EVERY_N_FRAMES = 30           # policy prints
+DEBUG_SUMMARY_EVERY_SECONDS = 5.0   # periodic summary
+DEBUG_SHOW_PANEL_PIXELS = True      # tiny pixels at top-left for state visibility
 
-# print every N frames for high-frequency stuff (policy/present)
-DEBUG_EVERY_N_FRAMES = 30  # ~3 seconds if PERIOD=0.1, adjust
-
-# print every N seconds for periodic summaries
-DEBUG_SUMMARY_EVERY_SECONDS = 5.0
+# If your icons/logos still don't show, set True to log missing SetImage support:
+DEBUG_LOG_IMAGE_DRAW = True
 
 
 def _ts() -> str:
@@ -52,10 +52,7 @@ SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
 
 
 def read_screen_state():
-    """
-    Returns "on" or "off".
-    If file missing/bad, default to "on".
-    """
+    """Returns 'on' or 'off'. Defaults to 'on' on error."""
     try:
         with open(SCREEN_STATE_FILE, "r", encoding="utf-8") as f:
             v = json.load(f).get("screen", "on")
@@ -110,10 +107,7 @@ def is_night_time():
 
 
 def desired_brightness():
-    """
-    If NIGHT_BRIGHTNESS is True and currently night, use BRIGHTNESS_NIGHT.
-    Otherwise use BRIGHTNESS.
-    """
+    """If NIGHT_BRIGHTNESS is True and it's night, use BRIGHTNESS_NIGHT else BRIGHTNESS."""
     if NIGHT_BRIGHTNESS and is_night_time():
         return int(BRIGHTNESS_NIGHT)
     return int(BRIGHTNESS)
@@ -140,7 +134,11 @@ class Display(
     def __init__(self):
         # Setup Display
         options = RGBMatrixOptions()
-        options.hardware_mapping = "adafruit-hat"  # hard-coded per your test
+
+        # You discovered adafruit-hat works; keep hard-coded for now.
+        # If you later want pwm again, switch carefully.
+        options.hardware_mapping = "adafruit-hat"
+
         options.rows = 32
         options.cols = 64
         options.chain_length = 1
@@ -155,6 +153,9 @@ class Display(
         options.show_refresh_rate = 0
         options.gpio_slowdown = int(GPIO_SLOWDOWN)
         options.disable_hardware_pulsing = True
+
+        # NOTE: You were testing drop_privileges=False; keep as-is.
+        # If you run as root, you can set True.
         options.drop_privileges = False
 
         _dbg(
@@ -178,14 +179,22 @@ class Display(
         self.overhead = Overhead()
         self.overhead.grab_data()
 
+        # -----------------------------
+        # Dirty-buffer presentation
+        # -----------------------------
+        # If we SwapOnVSync every frame but only partially redraw, you will flicker.
+        # We fix that by swapping ONLY when the frame is "dirty".
+        self._dirty = True
+        self._off_mode_force_swap_counter = 0
+
+        # Track current “off” state so we don’t thrash pause/resume
+        self._effective_off = False
+
         # Initialize animator + scenes
         super().__init__()
 
         # Animator timing
         self.delay = frames.PERIOD
-
-        # Track current “off” state so we don’t thrash pause/resume
-        self._effective_off = False
 
         # =============================
         # DEBUG STATE
@@ -202,15 +211,60 @@ class Display(
             try:
                 names = [name for name, _ in self.keyframes]
                 _dbg("KEYFRAMES order=" + ", ".join(names))
-                # sanity: ensure present is last
                 if names and names[-1] != "zzzzzz_present":
                     _dbg(f"WARNING: present is not last! last={names[-1]}")
             except Exception as e:
                 _dbg(f"Could not print keyframe order: {e}")
 
+        # Detect whether canvas supports SetImage (for icons/logos)
+        self._canvas_has_setimage = hasattr(self.canvas, "SetImage")
+        if DEBUG_LOG_IMAGE_DRAW:
+            _dbg(f"CAPS canvas.SetImage={self._canvas_has_setimage}")
+
+    # -----------------------------
+    # Draw helpers (mark dirty!)
+    # -----------------------------
+    def mark_dirty(self):
+        self._dirty = True
+
     def draw_square(self, x0, y0, x1, y1, colour):
+        self._dirty = True
         for x in range(x0, x1):
             _ = graphics.DrawLine(self.canvas, x, y0, x, y1, colour)
+
+    def draw_text(self, font, x, y, colour, text) -> int:
+        self._dirty = True
+        return graphics.DrawText(self.canvas, font, x, y, colour, text)
+
+    def set_pixel(self, x, y, r, g, b):
+        self._dirty = True
+        self.canvas.SetPixel(x, y, int(r), int(g), int(b))
+
+    def set_image(self, pil_img, x=0, y=0):
+        """
+        Draw a PIL image onto the current *canvas* (backbuffer).
+        This is critical: drawing to matrix directly bypasses the buffer flow and
+        often results in 'no icon' or tearing/flicker.
+        """
+        if pil_img is None:
+            return
+
+        if self._canvas_has_setimage:
+            self._dirty = True
+            self.canvas.SetImage(pil_img, x, y)
+            return
+
+        # Fallback: very slow pixel blit (but guarantees something shows)
+        if DEBUG_LOG_IMAGE_DRAW:
+            _dbg("WARN canvas has no SetImage; using slow pixel blit fallback")
+        self._dirty = True
+        img = pil_img.convert("RGB")
+        w, h = img.size
+        pix = img.load()
+        for iy in range(h):
+            for ix in range(w):
+                r, g, b = pix[ix, iy]
+                self.canvas.SetPixel(x + ix, y + iy, int(r), int(g), int(b))
 
     # =============================
     # DEBUG HELPERS
@@ -222,20 +276,19 @@ class Display(
         self._dbg_last_summary_t = now
 
         flights_active = len(getattr(self, "_data", [])) > 0
-
         _dbg(
             f"SUMMARY swaps={self._dbg_swap_count} clears={self._dbg_clear_count} resets={self._dbg_reset_count} "
-            f"paused={self.paused} eff_off={self._effective_off} "
+            f"dirty={self._dirty} paused={self.paused} eff_off={self._effective_off} "
             f"flights_active={flights_active} data_len={len(getattr(self,'_data',[]))} data_idx={getattr(self,'_data_index',None)}"
         )
 
     @Animator.KeyFrame.add(0)
     def clear_screen(self):
-        # First operation after a scene reset
         self._dbg_clear_count += 1
         if DEBUG:
             _dbg(f"CLEAR_SCREEN fired count={self._dbg_clear_count}")
         self.canvas.Clear()
+        self._dirty = True
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
     def check_for_loaded_data(self, count):
@@ -258,11 +311,10 @@ class Display(
 
             reset_required = there_is_data and data_is_different
             if reset_required:
-                # (3,0) = yellow flash on reset trigger (will persist until cleared)
-                self.canvas.SetPixel(3, 0, 255, 255, 0)
                 self._dbg_reset_count += 1
                 _dbg(f"RESET_SCENE triggered resets={self._dbg_reset_count}")
                 self.reset_scene()
+                self._dirty = True
 
         # track flight/home transitions (even if no new_data)
         flights_active = len(getattr(self, "_data", [])) > 0
@@ -282,15 +334,16 @@ class Display(
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
 
-        # Debug state pixels (visible on panel)
-        # (1,0) = red when policy says OFF
-        self.canvas.SetPixel(1, 0, 255 if should_be_off else 0, 0, 0)
-
-        # (2,0) = blue when flights active
         flights_active = len(getattr(self, "_data", [])) > 0
-        self.canvas.SetPixel(2, 0, 0, 0, 255 if flights_active else 0)
 
-        # Only print policy occasionally (otherwise it floods)
+        if DEBUG_SHOW_PANEL_PIXELS:
+            # (0,0) set in present (green heartbeat)
+            # (1,0) red when policy says OFF
+            self.canvas.SetPixel(1, 0, 255 if should_be_off else 0, 0, 0)
+            # (2,0) blue when flights active
+            self.canvas.SetPixel(2, 0, 0, 0, 255 if flights_active else 0)
+            self._dirty = True
+
         if DEBUG and (self.frame % DEBUG_EVERY_N_FRAMES == 0):
             _dbg(
                 f"POLICY frame={self.frame} screen={screen_state} night={is_night_time()} "
@@ -312,10 +365,11 @@ class Display(
                 _dbg("POLICY entering OFF: pause() + brightness=0")
                 self.pause()
 
-            # Keep backbuffer blank while off
+            # keep backbuffer blank while off
             self.canvas.Clear()
+            self._dirty = True
 
-            # Force matrix brightness to 0
+            # force matrix brightness to 0
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
 
@@ -328,6 +382,7 @@ class Display(
             _dbg("POLICY leaving OFF: resume() + clear backbuffer")
             self.resume()
             self.canvas.Clear()
+            self._dirty = True
 
         if self.matrix.brightness != target_brightness:
             self.matrix.brightness = target_brightness
@@ -340,22 +395,27 @@ class Display(
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True)
     def zzzzzz_present(self, count):
-        self._dbg_swap_count += 1
+        # heartbeat pixel so you always know present is running
+        if DEBUG_SHOW_PANEL_PIXELS:
+            self.canvas.SetPixel(0, 0, 0, 255, 0)
+            self._dirty = True
 
-        # print occasionally
-        # proof pixel (0,0) green: present is running
-        self.canvas.SetPixel(0, 0, 0, 255, 0)
+        # If OFF: we *must* keep swapping occasionally to enforce blankness.
+        # If ON: swap ONLY when dirty -> eliminates flicker.
+        if self._effective_off:
+            # swap every frame while off (safe) OR rate-limit if you prefer
+            self.canvas = self.matrix.SwapOnVSync(self.canvas)
+            self._dbg_swap_count += 1
+            self._dirty = False
+            return
 
-        # blink-reset indicator pixel at (3,0) every ~1s so you can see it flash
-        # (If reset never happens, it stays off)
-        if (self.frame % (frames.PER_SECOND * 1)) == 0:
-            self.canvas.SetPixel(3, 0, 0, 0, 0)
+        # ON mode: dirty-driven swap
+        if not self._dirty:
+            return
 
-        # proof pixel (top-left green)
-        self.canvas.SetPixel(0, 0, 0, 255, 0)
-
-        # Swap and KEEP the returned backbuffer
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
+        self._dbg_swap_count += 1
+        self._dirty = False
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):

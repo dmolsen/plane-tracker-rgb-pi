@@ -193,6 +193,8 @@ class Display(
         # Initialize animator + scenes
         super().__init__()
 
+        self.enabled_tags = {"smoke"}  # start with just clock
+
         # Animator timing
         self.delay = frames.PERIOD
 

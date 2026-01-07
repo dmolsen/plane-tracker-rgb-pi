@@ -50,7 +50,7 @@ class TemperatureScene(object):
             int(colour_A.blue + ((colour_B.blue - colour_A.blue) * ratio)),
         )
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1)
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultTemperature")
     def temperature(self, count):
         flights_active = self._flights_active()
 

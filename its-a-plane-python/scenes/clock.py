@@ -54,7 +54,7 @@ class ClockScene(object):
             colours.BLACK,
         )
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1)
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultClock")
     def clock(self, count):
         # Flights active?
         showing_flights = len(getattr(self, "_data", [])) > 0

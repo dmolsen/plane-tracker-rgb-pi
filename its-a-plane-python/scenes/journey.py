@@ -141,7 +141,7 @@ class JourneyScene(object):
             return None
         return self._data[self._data_index]
 
-    @Animator.KeyFrame.add(1)
+    @Animator.KeyFrame.add(1, tag="flightJourney")
     def journey(self, count):
         flights_active = self._flights_active()
 

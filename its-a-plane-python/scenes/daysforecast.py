@@ -96,7 +96,7 @@ class DaysForecastScene(object):
             return True
         return now.hour != self._last_fetch_hour
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1)
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultForecast")
     def day(self, count):
         showing_flights = len(getattr(self, "_data", [])) > 0
 

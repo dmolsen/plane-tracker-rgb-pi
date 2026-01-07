@@ -76,7 +76,7 @@ class FlightLogoScene(object):
         self._logo_cache[icao] = img
         return img
 
-    @Animator.KeyFrame.add(1)
+    @Animator.KeyFrame.add(1, tag="flightLogo")
     def logo_details(self, count):
         flights_active = self._flights_active()
 

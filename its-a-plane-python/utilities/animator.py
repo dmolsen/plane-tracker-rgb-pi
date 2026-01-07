@@ -5,22 +5,27 @@ DELAY_DEFAULT = 0.01
 
 class Animator(object):
     """
-    Deterministic keyframe scheduling + pause mechanism.
+    Deterministic keyframe scheduling + pause mechanism + optional tag gating.
 
     - Keyframes are registered in sorted name order (stable/deterministic).
     - When paused, only keyframes marked run_while_paused=True run.
     - On resume, we force a reset_scene() once.
+    - Optional: tag-based enable/disable of groups of keyframes for debugging.
+      * If enabled_tags is None: run everything (default).
+      * If enabled_tags is a set: only keyframes whose tag is in enabled_tags run.
+      * tag=None means "core" and always runs (policy/present/etc).
     """
 
     class KeyFrame(object):
         @staticmethod
-        def add(divisor, offset=0, run_while_paused=False):
+        def add(divisor, offset=0, run_while_paused=False, tag=None):
             def wrapper(func):
                 func.properties = {
                     "divisor": divisor,
                     "offset": offset,
                     "count": 0,
                     "run_while_paused": run_while_paused,
+                    "tag": tag,  # <-- NEW
                 }
                 return func
             return wrapper
@@ -33,11 +38,16 @@ class Animator(object):
         self._paused = False
         self._pending_reset = True  # do divisor==0 once on first loop and on resume
 
+        # --- NEW: tag gating ---
+        # None = run all tags
+        # set(...) = only run keyframes with tag in set; tag=None always runs
+        self.enabled_tags = None
+        self._last_enabled_tags_snapshot = None
+
         self._register_keyframes()
         super().__init__()
 
     def _register_keyframes(self):
-        # Register in deterministic order so "present" can be reliably last.
         items = []
         for methodname in dir(self):
             method = getattr(self, methodname)
@@ -66,18 +76,47 @@ class Animator(object):
     def paused(self) -> bool:
         return self._paused
 
+    def _tag_allowed(self, props) -> bool:
+        """
+        Returns True if this keyframe should run under current enabled_tags.
+        tag=None => always allowed (core).
+        """
+        if self.enabled_tags is None:
+            return True
+        tag = props.get("tag", None)
+        if tag is None:
+            return True
+        return tag in self.enabled_tags
+
+    def reset_on_enable_tags_change(self):
+        """
+        Optional helper:
+        if you change enabled_tags at runtime, call this to force a clean redraw.
+        """
+        self._pending_reset = True
+
     def play(self):
         while True:
+            # Detect enabled_tags changes (if you flip them while running)
+            snapshot = None if self.enabled_tags is None else tuple(sorted(self.enabled_tags))
+            if snapshot != self._last_enabled_tags_snapshot:
+                self._last_enabled_tags_snapshot = snapshot
+                self._pending_reset = True  # force divisor==0 keyframes + count reset
+
             if self._pending_reset:
                 self.reset_scene()
                 self._pending_reset = False
-                # reset counts so animations don't jump
                 for _, kf in self.keyframes:
                     kf.properties["count"] = 0
 
             for _, keyframe in self.keyframes:
                 props = keyframe.properties
 
+                # tag gating
+                if not self._tag_allowed(props):
+                    continue
+
+                # pause gating
                 if self._paused and not props.get("run_while_paused", False):
                     continue
 

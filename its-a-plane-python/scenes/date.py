@@ -40,7 +40,7 @@ class DateScene(object):
             colours.BLACK,
         )
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1)
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultDate")
     def date(self, count):
         # Flights active?
         showing_flights = len(getattr(self, "_data", [])) > 0

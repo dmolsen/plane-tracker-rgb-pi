@@ -32,7 +32,7 @@ class FlightDetailsScene(object):
         except Exception:
             return default
 
-    @Animator.KeyFrame.add(1)
+    @Animator.KeyFrame.add(1, tag="flightDetails")
     def flight_details(self, count):
         # Guard against no data
         if not getattr(self, "_data", None) or len(self._data) == 0:

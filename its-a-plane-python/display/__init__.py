@@ -177,11 +177,6 @@ class Display(
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
     def check_for_loaded_data(self, count):
-        print(
-            f"loaded_data: new={self.overhead.new_data} empty={self.overhead.data_is_empty} "
-            f"len_old={len(self._data)} len_new={len(new_data)} different={data_is_different}",
-            flush=True
-        )
         if self.overhead.new_data:
             there_is_data = len(self._data) > 0 or not self.overhead.data_is_empty
             new_data = self.overhead.data

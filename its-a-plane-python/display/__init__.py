@@ -177,6 +177,11 @@ class Display(
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
     def check_for_loaded_data(self, count):
+        print(
+            f"loaded_data: new={self.overhead.new_data} empty={self.overhead.data_is_empty} "
+            f"len_old={len(self._data)} len_new={len(new_data)} different={data_is_different}",
+            flush=True
+        )
         if self.overhead.new_data:
             there_is_data = len(self._data) > 0 or not self.overhead.data_is_empty
             new_data = self.overhead.data
@@ -196,7 +201,7 @@ class Display(
     # (NO SwapOnVSync here)
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True)
-    def zz_sync_policy(self, count):
+    def zzzzzy_policy(self, count):
         screen_state = read_screen_state()
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
@@ -240,7 +245,7 @@ class Display(
     # (runs even while paused)
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True)
-    def zzz_present(self, count):
+    def zzzzzz_present(self, count):
         # Optional proof pixel (uncomment while debugging)
         self.canvas.SetPixel(0, 0, 0, 255, 0)
 

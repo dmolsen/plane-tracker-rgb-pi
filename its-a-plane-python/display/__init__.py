@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import time
 from datetime import datetime
 
 from setup import frames
@@ -19,6 +20,28 @@ from scenes.date import DateScene
 
 from rgbmatrix import graphics
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
+
+
+# =============================
+# DEBUG SETTINGS
+# =============================
+DEBUG = True
+
+# print every N frames for high-frequency stuff (policy/present)
+DEBUG_EVERY_N_FRAMES = 30  # ~3 seconds if PERIOD=0.1, adjust
+
+# print every N seconds for periodic summaries
+DEBUG_SUMMARY_EVERY_SECONDS = 5.0
+
+
+def _ts() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def _dbg(msg: str, flush: bool = True):
+    if not DEBUG:
+        return
+    print(f"{_ts()} PID={os.getpid()} {msg}", flush=flush)
 
 
 # -----------------------------
@@ -90,8 +113,6 @@ def desired_brightness():
     """
     If NIGHT_BRIGHTNESS is True and currently night, use BRIGHTNESS_NIGHT.
     Otherwise use BRIGHTNESS.
-
-    If you want "night = fully off", set BRIGHTNESS_NIGHT = 0 in config.
     """
     if NIGHT_BRIGHTNESS and is_night_time():
         return int(BRIGHTNESS_NIGHT)
@@ -119,7 +140,7 @@ class Display(
     def __init__(self):
         # Setup Display
         options = RGBMatrixOptions()
-        options.hardware_mapping = "adafruit-hat" #"adafruit-hat-pwm" if HAT_PWM_ENABLED else "adafruit-hat"
+        options.hardware_mapping = "adafruit-hat"  # hard-coded per your test
         options.rows = 32
         options.cols = 64
         options.chain_length = 1
@@ -136,10 +157,10 @@ class Display(
         options.disable_hardware_pulsing = True
         options.drop_privileges = False
 
-        print(
-            f"rgbmatrix mapping={options.hardware_mapping} rows={options.rows} cols={options.cols} "
-            f"gpio_slowdown={options.gpio_slowdown} brightness={options.brightness}",
-            flush=True
+        _dbg(
+            f"BOOT rgbmatrix mapping={options.hardware_mapping!r} rows={options.rows} cols={options.cols} "
+            f"gpio_slowdown={options.gpio_slowdown} brightness={options.brightness} "
+            f"drop_privileges={options.drop_privileges}"
         )
 
         self.matrix = RGBMatrix(options=options)
@@ -166,13 +187,71 @@ class Display(
         # Track current “off” state so we don’t thrash pause/resume
         self._effective_off = False
 
+        # =============================
+        # DEBUG STATE
+        # =============================
+        self._dbg_last_summary_t = time.time()
+        self._dbg_swap_count = 0
+        self._dbg_clear_count = 0
+        self._dbg_reset_count = 0
+        self._dbg_last_policy_should_off = None
+        self._dbg_last_flights_active = None
+
+        # Print keyframe order once (VERY IMPORTANT)
+        if DEBUG and hasattr(self, "keyframes"):
+            try:
+                names = [name for name, _ in self.keyframes]
+                _dbg("KEYFRAMES order=" + ", ".join(names))
+                # sanity: ensure present is last
+                if names and names[-1] != "zzzzzz_present":
+                    _dbg(f"WARNING: present is not last! last={names[-1]}")
+            except Exception as e:
+                _dbg(f"Could not print keyframe order: {e}")
+
     def draw_square(self, x0, y0, x1, y1, colour):
         for x in range(x0, x1):
             _ = graphics.DrawLine(self.canvas, x, y0, x, y1, colour)
 
+    # =============================
+    # DEBUG HELPERS
+    # =============================
+    def _dbg_activity_probe(self) -> int:
+        """
+        Sample a tiny region and count non-black pixels.
+        Helps detect 'we drew nothing' vs 'we drew then cleared'.
+        Cheap 8x8 probe.
+        """
+        nonzero = 0
+        # Probe top-left 8x8 area (avoid your proof pixel at 0,0 if you want)
+        for y in range(0, 8):
+            for x in range(0, 8):
+                r, g, b = self.canvas.GetPixel(x, y)
+                if (r | g | b) != 0:
+                    nonzero += 1
+        return nonzero
+
+    def _dbg_summary(self):
+        now = time.time()
+        if now - self._dbg_last_summary_t < DEBUG_SUMMARY_EVERY_SECONDS:
+            return
+        self._dbg_last_summary_t = now
+
+        flights_active = len(getattr(self, "_data", [])) > 0
+        activity = self._dbg_activity_probe()
+
+        _dbg(
+            f"SUMMARY swaps={self._dbg_swap_count} clears={self._dbg_clear_count} resets={self._dbg_reset_count} "
+            f"paused={self.paused} eff_off={self._effective_off} "
+            f"flights_active={flights_active} data_len={len(getattr(self,'_data',[]))} data_idx={getattr(self,'_data_index',None)} "
+            f"probe_nonzero={activity}"
+        )
+
     @Animator.KeyFrame.add(0)
     def clear_screen(self):
         # First operation after a scene reset
+        self._dbg_clear_count += 1
+        if DEBUG:
+            _dbg(f"CLEAR_SCREEN fired count={self._dbg_clear_count}")
         self.canvas.Clear()
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
@@ -182,6 +261,13 @@ class Display(
             new_data = self.overhead.data
             data_is_different = not flight_updated(self._data, new_data)
 
+            if DEBUG:
+                _dbg(
+                    f"DATA new_data=True there_is_data={there_is_data} "
+                    f"old_len={len(self._data)} new_len={len(new_data)} different={data_is_different} "
+                    f"processing={getattr(self.overhead,'processing',None)} empty={getattr(self.overhead,'data_is_empty',None)}"
+                )
+
             if data_is_different:
                 self._data_index = 0
                 self._data_all_looped = False
@@ -189,7 +275,17 @@ class Display(
 
             reset_required = there_is_data and data_is_different
             if reset_required:
+                self._dbg_reset_count += 1
+                _dbg(f"RESET_SCENE triggered resets={self._dbg_reset_count}")
                 self.reset_scene()
+
+        # track flight/home transitions (even if no new_data)
+        flights_active = len(getattr(self, "_data", [])) > 0
+        if self._dbg_last_flights_active is None:
+            self._dbg_last_flights_active = flights_active
+        elif flights_active != self._dbg_last_flights_active:
+            self._dbg_last_flights_active = flights_active
+            _dbg(f"FLIGHT_STATE change flights_active={flights_active} len(_data)={len(self._data)}")
 
     # -----------------------------
     # POLICY: off/on + night + pause/resume
@@ -201,18 +297,26 @@ class Display(
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
 
-        # Debug prints (keep while you test)
-        print(
-            f"{datetime.now().isoformat()} screen={screen_state} "
-            f"night={is_night_time()} target_brightness={target_brightness} "
-            f"should_be_off={should_be_off} paused={self.paused} "
-            f"matrix.brightness={getattr(self.matrix, 'brightness', None)}",
-            flush=True,
-        )
+        # Only print policy occasionally (otherwise it floods)
+        if DEBUG and (self.frame % DEBUG_EVERY_N_FRAMES == 0):
+            _dbg(
+                f"POLICY frame={self.frame} screen={screen_state} night={is_night_time()} "
+                f"target_brightness={target_brightness} should_off={should_be_off} "
+                f"paused={self.paused} eff_off={self._effective_off} "
+                f"matrix.brightness={getattr(self.matrix,'brightness',None)}"
+            )
+
+        # detect unexpected toggling
+        if self._dbg_last_policy_should_off is None:
+            self._dbg_last_policy_should_off = should_be_off
+        elif should_be_off != self._dbg_last_policy_should_off:
+            self._dbg_last_policy_should_off = should_be_off
+            _dbg(f"POLICY TOGGLE should_be_off -> {should_be_off} (screen_state={screen_state}, target={target_brightness})")
 
         if should_be_off:
             if not self._effective_off:
                 self._effective_off = True
+                _dbg("POLICY entering OFF: pause() + brightness=0")
                 self.pause()
 
             # Keep backbuffer blank while off
@@ -222,18 +326,20 @@ class Display(
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
 
+            self._dbg_summary()
             return
 
         # --- ON MODE ---
         if self._effective_off:
             self._effective_off = False
-            # Resume triggers reset_scene once on the next loop
+            _dbg("POLICY leaving OFF: resume() + clear backbuffer")
             self.resume()
-            # Clear backbuffer so the first "on" frame is clean
             self.canvas.Clear()
 
         if self.matrix.brightness != target_brightness:
             self.matrix.brightness = target_brightness
+
+        self._dbg_summary()
 
     # -----------------------------
     # PRESENT: the ONLY SwapOnVSync
@@ -241,9 +347,17 @@ class Display(
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True)
     def zzzzzz_present(self, count):
-        # Optional proof pixel (uncomment while debugging)
+        self._dbg_swap_count += 1
+
+        # print occasionally
+        if DEBUG and (self.frame % DEBUG_EVERY_N_FRAMES == 0):
+            activity = self._dbg_activity_probe()
+            _dbg(f"PRESENT frame={self.frame} swaps={self._dbg_swap_count} probe_nonzero={activity}")
+
+        # proof pixel (top-left green)
         self.canvas.SetPixel(0, 0, 0, 255, 0)
 
+        # Swap and KEEP the returned backbuffer
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
@@ -251,12 +365,14 @@ class Display(
         if not (self.overhead.processing and self.overhead.new_data) and (
             self._data_all_looped or len(self._data) <= 1
         ):
+            if DEBUG:
+                _dbg("GRAB_NEW_DATA calling overhead.grab_data()")
             self.overhead.grab_data()
 
     def run(self):
         try:
-            print("Press CTRL-C to stop")
+            _dbg("RUN starting Animator.play()")
             self.play()
         except KeyboardInterrupt:
-            print("Exiting\n")
+            _dbg("Exiting (KeyboardInterrupt)")
             sys.exit(0)

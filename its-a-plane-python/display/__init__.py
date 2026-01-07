@@ -193,7 +193,9 @@ class Display(
         # Initialize animator + scenes
         super().__init__()
 
-        self.enabled_tags = {"smoke"}  # start with just clock
+        self.enabled_tags = {"clock"}  # start with just clock
+
+        print("DEBUG pending_reset:", getattr(self, "_pending_reset", None), flush=True)
 
         # Animator timing
         self.delay = frames.PERIOD

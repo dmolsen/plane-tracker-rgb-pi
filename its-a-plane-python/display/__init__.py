@@ -236,7 +236,7 @@ class Display(
     @Animator.KeyFrame.add(1, run_while_paused=True)
     def zzz_present(self, count):
         # Optional proof pixel (uncomment while debugging)
-        # self.canvas.SetPixel(0, 0, 0, 255, 0)
+        self.canvas.SetPixel(0, 0, 0, 255, 0)
 
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
 

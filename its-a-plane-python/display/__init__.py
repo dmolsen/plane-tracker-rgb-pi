@@ -134,7 +134,13 @@ class Display(
         options.show_refresh_rate = 0
         options.gpio_slowdown = int(GPIO_SLOWDOWN)
         options.disable_hardware_pulsing = True
-        options.drop_privileges = True
+        options.drop_privileges = False
+
+        print(
+            f"rgbmatrix mapping={options.hardware_mapping} rows={options.rows} cols={options.cols} "
+            f"gpio_slowdown={options.gpio_slowdown} brightness={options.brightness}",
+            flush=True
+        )
 
         self.matrix = RGBMatrix(options=options)
 

@@ -43,17 +43,7 @@ def read_screen_state():
 
 def flight_updated(flights_a, flights_b):
     get_callsigns = lambda flights: [(f.get("callsign"), f.get("direction")) for f in flights]
-    updatable_a = set(get_callsigns(flights_a))
-    updatable_b = set(get_callsigns(flights_b))
-    return updatable_a == updatable_b
-
-
-def _debug_log(msg: str):
-    try:
-        with open(os.path.join(BASE_DIR, "display_debug.log"), "a", encoding="utf-8") as f:
-            f.write(msg + "\n")
-    except Exception:
-        pass
+    return set(get_callsigns(flights_a)) == set(get_callsigns(flights_b))
 
 
 # -----------------------------
@@ -148,7 +138,7 @@ class Display(
 
         self.matrix = RGBMatrix(options=options)
 
-        # Setup canvas
+        # Setup canvas (IMPORTANT: keep and swap the returned canvas)
         self.canvas = self.matrix.CreateFrameCanvas()
         self.canvas.Clear()
 
@@ -195,17 +185,22 @@ class Display(
             if reset_required:
                 self.reset_scene()
 
+    # -----------------------------
+    # POLICY: off/on + night + pause/resume
+    # (NO SwapOnVSync here)
+    # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True)
-    def zz_present(self, count):
+    def zz_sync_policy(self, count):
         screen_state = read_screen_state()
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
 
+        # Debug prints (keep while you test)
         print(
             f"{datetime.now().isoformat()} screen={screen_state} "
             f"night={is_night_time()} target_brightness={target_brightness} "
             f"should_be_off={should_be_off} paused={self.paused} "
-            f"matrix.brightness={getattr(self.matrix,'brightness',None)}",
+            f"matrix.brightness={getattr(self.matrix, 'brightness', None)}",
             flush=True,
         )
 
@@ -214,24 +209,34 @@ class Display(
                 self._effective_off = True
                 self.pause()
 
+            # Keep backbuffer blank while off
             self.canvas.Clear()
+
+            # Force matrix brightness to 0
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
 
-            self.canvas = self.matrix.SwapOnVSync(self.canvas)
             return
 
         # --- ON MODE ---
         if self._effective_off:
             self._effective_off = False
+            # Resume triggers reset_scene once on the next loop
             self.resume()
-            self.canvas.Clear()  # avoid a stale/ghost frame on resume
+            # Clear backbuffer so the first "on" frame is clean
+            self.canvas.Clear()
 
         if self.matrix.brightness != target_brightness:
             self.matrix.brightness = target_brightness
 
-        # PROOF PIXEL (top-left green)
-        self.canvas.SetPixel(0, 0, 0, 255, 0)
+    # -----------------------------
+    # PRESENT: the ONLY SwapOnVSync
+    # (runs even while paused)
+    # -----------------------------
+    @Animator.KeyFrame.add(1, run_while_paused=True)
+    def zzz_present(self, count):
+        # Optional proof pixel (uncomment while debugging)
+        # self.canvas.SetPixel(0, 0, 0, 255, 0)
 
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
 

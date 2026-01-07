@@ -48,6 +48,14 @@ def flight_updated(flights_a, flights_b):
     return updatable_a == updatable_b
 
 
+def _debug_log(msg: str):
+    try:
+        with open(os.path.join(BASE_DIR, "display_debug.log"), "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
+
+
 # -----------------------------
 # Config
 # -----------------------------
@@ -201,6 +209,16 @@ class Display(
 
         # Treat brightness <= 0 as "off" (supports BRIGHTNESS_NIGHT=0)
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
+
+        print(
+            f"{datetime.now().isoformat()} "
+            f"screen={screen_state} "
+            f"night={is_night_time()} "
+            f"target_brightness={target_brightness} "
+            f"should_be_off={should_be_off} "
+            f"paused={self.paused}",
+            flush=True,
+        )
 
         if should_be_off:
             if not self._effective_off:

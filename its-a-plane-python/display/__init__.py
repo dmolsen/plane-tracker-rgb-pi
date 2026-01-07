@@ -197,26 +197,15 @@ class Display(
 
     @Animator.KeyFrame.add(1, run_while_paused=True)
     def sync(self, count):
-        """
-        The ONLY place we apply off/night policy.
-
-        When “off”, we pause the animator (scenes stop running).
-        We still run sync() so the matrix stays blank + brightness 0.
-        """
-
         screen_state = read_screen_state()  # "on" or "off"
         target_brightness = desired_brightness()
-
-        # Treat brightness <= 0 as "off" (supports BRIGHTNESS_NIGHT=0)
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
 
         print(
-            f"{datetime.now().isoformat()} "
-            f"screen={screen_state} "
-            f"night={is_night_time()} "
-            f"target_brightness={target_brightness} "
-            f"should_be_off={should_be_off} "
-            f"paused={self.paused}",
+            f"{datetime.now().isoformat()} screen={screen_state} "
+            f"night={is_night_time()} target_brightness={target_brightness} "
+            f"should_be_off={should_be_off} paused={self.paused} "
+            f"matrix.brightness={getattr(self.matrix,'brightness',None)}",
             flush=True,
         )
 
@@ -225,24 +214,24 @@ class Display(
                 self._effective_off = True
                 self.pause()
 
-            # Hard blank every tick while off so nothing “flashes”
             self.canvas.Clear()
             if self.matrix.brightness != 0:
                 self.matrix.brightness = 0
 
-            _ = self.matrix.SwapOnVSync(self.canvas)
+            # IMPORTANT: capture the returned canvas
+            self.canvas = self.matrix.SwapOnVSync(self.canvas)
             return
 
         # --- ON MODE ---
         if self._effective_off:
-            # Resume triggers Animator to run divisor==0 keyframes once (clean reset)
             self._effective_off = False
             self.resume()
 
         if self.matrix.brightness != target_brightness:
             self.matrix.brightness = target_brightness
 
-        _ = self.matrix.SwapOnVSync(self.canvas)
+        # IMPORTANT: capture the returned canvas
+        self.canvas = self.matrix.SwapOnVSync(self.canvas)
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):

@@ -125,6 +125,6 @@ class PlaneDetailsScene(object):
                 if hasattr(self, "reset_scene"):
                     self.reset_scene()
 
-    @Animator.KeyFrame.add(0)
+    @Animator.KeyFrame.add(0, tag="flightPlaneDetails")
     def reset_scrolling(self):
         self.plane_position = screen.WIDTH

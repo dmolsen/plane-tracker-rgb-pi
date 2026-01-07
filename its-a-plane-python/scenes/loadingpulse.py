@@ -14,7 +14,7 @@ class LoadingPulseScene(object):
     def _clear_pixel(self):
         self.canvas.SetPixel(BLINKER_POSITION[0], BLINKER_POSITION[1], 0, 0, 0)
 
-    @Animator.KeyFrame.add(0, "defaultPulse")
+    @Animator.KeyFrame.add(0, tag="defaultPulse")
     def reset_loading_pulse(self):
         """
         Called on reset_scene() (startup, resume-from-off, flight index change).
@@ -22,7 +22,7 @@ class LoadingPulseScene(object):
         """
         self._clear_pixel()
 
-    @Animator.KeyFrame.add(2, "defaultPulse")  # run_while_paused stays False by default (important)
+    @Animator.KeyFrame.add(2, tag="defaultPulse")  # run_while_paused stays False by default (important)
     def loading_pulse(self, count):
         # If overhead is missing for any reason, just keep it cleared.
         if not hasattr(self, "overhead"):

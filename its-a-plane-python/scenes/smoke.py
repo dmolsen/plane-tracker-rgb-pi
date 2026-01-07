@@ -5,7 +5,7 @@ class SmokeScene(object):
         super().__init__()
         self._last = None
 
-    @Animator.KeyFrame.add(1)
+    @Animator.KeyFrame.add(1,tag="smoke")
     def smoke(self, count):
         # erase previous pixel
         if self._last is not None:

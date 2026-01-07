@@ -215,21 +215,6 @@ class Display(
     # =============================
     # DEBUG HELPERS
     # =============================
-    def _dbg_activity_probe(self) -> int:
-        """
-        Sample a tiny region and count non-black pixels.
-        Helps detect 'we drew nothing' vs 'we drew then cleared'.
-        Cheap 8x8 probe.
-        """
-        nonzero = 0
-        # Probe top-left 8x8 area (avoid your proof pixel at 0,0 if you want)
-        for y in range(0, 8):
-            for x in range(0, 8):
-                r, g, b = self.canvas.GetPixel(x, y)
-                if (r | g | b) != 0:
-                    nonzero += 1
-        return nonzero
-
     def _dbg_summary(self):
         now = time.time()
         if now - self._dbg_last_summary_t < DEBUG_SUMMARY_EVERY_SECONDS:
@@ -237,13 +222,11 @@ class Display(
         self._dbg_last_summary_t = now
 
         flights_active = len(getattr(self, "_data", [])) > 0
-        activity = self._dbg_activity_probe()
 
         _dbg(
             f"SUMMARY swaps={self._dbg_swap_count} clears={self._dbg_clear_count} resets={self._dbg_reset_count} "
             f"paused={self.paused} eff_off={self._effective_off} "
-            f"flights_active={flights_active} data_len={len(getattr(self,'_data',[]))} data_idx={getattr(self,'_data_index',None)} "
-            f"probe_nonzero={activity}"
+            f"flights_active={flights_active} data_len={len(getattr(self,'_data',[]))} data_idx={getattr(self,'_data_index',None)}"
         )
 
     @Animator.KeyFrame.add(0)
@@ -275,6 +258,8 @@ class Display(
 
             reset_required = there_is_data and data_is_different
             if reset_required:
+                # (3,0) = yellow flash on reset trigger (will persist until cleared)
+                self.canvas.SetPixel(3, 0, 255, 255, 0)
                 self._dbg_reset_count += 1
                 _dbg(f"RESET_SCENE triggered resets={self._dbg_reset_count}")
                 self.reset_scene()
@@ -296,6 +281,14 @@ class Display(
         screen_state = read_screen_state()
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
+
+        # Debug state pixels (visible on panel)
+        # (1,0) = red when policy says OFF
+        self.canvas.SetPixel(1, 0, 255 if should_be_off else 0, 0, 0)
+
+        # (2,0) = blue when flights active
+        flights_active = len(getattr(self, "_data", [])) > 0
+        self.canvas.SetPixel(2, 0, 0, 0, 255 if flights_active else 0)
 
         # Only print policy occasionally (otherwise it floods)
         if DEBUG and (self.frame % DEBUG_EVERY_N_FRAMES == 0):
@@ -350,9 +343,13 @@ class Display(
         self._dbg_swap_count += 1
 
         # print occasionally
-        if DEBUG and (self.frame % DEBUG_EVERY_N_FRAMES == 0):
-            activity = self._dbg_activity_probe()
-            _dbg(f"PRESENT frame={self.frame} swaps={self._dbg_swap_count} probe_nonzero={activity}")
+        # proof pixel (0,0) green: present is running
+        self.canvas.SetPixel(0, 0, 0, 255, 0)
+
+        # blink-reset indicator pixel at (3,0) every ~1s so you can see it flash
+        # (If reset never happens, it stays off)
+        if (self.frame % (frames.PER_SECOND * 1)) == 0:
+            self.canvas.SetPixel(3, 0, 0, 0, 0)
 
         # proof pixel (top-left green)
         self.canvas.SetPixel(0, 0, 0, 255, 0)

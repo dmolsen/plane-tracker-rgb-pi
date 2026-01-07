@@ -106,6 +106,6 @@ class FlightLogoScene(object):
         img = self._get_logo(str(icao))
         if img is not None:
             # Draw at 0,0 (top-left)
-            self.matrix.SetImage(img, 0, 0)
+            self.canvas.SetImage(img, 0, 0)
 
         self._last_icao_drawn = icao

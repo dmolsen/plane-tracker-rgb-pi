@@ -174,7 +174,7 @@ class DaysForecastScene(object):
             if icon_name:
                 icon_img = self._get_icon(str(icon_name))
                 if icon_img is not None:
-                    self.matrix.SetImage(icon_img, icon_x, ICON_POSITION)
+                    self.canvas.SetImage(icon_img, icon_x, ICON_POSITION)
 
             graphics.DrawText(self.canvas, TEXT_FONT, max_temp_x, TEMP_POSITION, MAX_T_COLOUR, max_temp)
             graphics.DrawText(self.canvas, TEXT_FONT, min_temp_x, TEMP_POSITION, MIN_T_COLOUR, min_temp)

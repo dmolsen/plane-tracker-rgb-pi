@@ -1,3 +1,4 @@
+# scenes/clock.py
 from datetime import datetime
 
 from utilities.animator import Animator
@@ -42,7 +43,11 @@ class ClockScene(object):
     def __init__(self):
         super().__init__()
         self._last_time_str = None
+        self._last_colour_is_night = None
         self._redraw_time = True
+
+        # Track Display-level full clears so we redraw after canvas.Clear()
+        self._last_clear_token_seen = None
 
     def _clear_clock_area(self):
         self.draw_square(
@@ -53,21 +58,46 @@ class ClockScene(object):
             colours.BLACK,
         )
 
+    @Animator.KeyFrame.add(0, tag="default")
+    def reset_clock(self):
+        """
+        Called via Display.reset_scene() (divisor==0) when:
+        - boot / resume
+        - mode switches (default<->flight)
+        - any explicit clear_screen resets
+        """
+        self._last_time_str = None
+        self._last_colour_is_night = None
+        self._redraw_time = True
+        self._last_clear_token_seen = getattr(self, "_clear_token", None)
+        self._clear_clock_area()
+
     @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def clock(self, count):
+        # If Display performed a full canvas clear since we last drew, force redraw.
+        clear_token = getattr(self, "_clear_token", None)
+        if clear_token is not None and clear_token != self._last_clear_token_seen:
+            self._redraw_time = True
+            self._last_clear_token_seen = clear_token
 
         now = datetime.now()
         current_time_str = _format_time(now)
 
-        # Only redraw if minute changed or forced
-        if (current_time_str == self._last_time_str) and (not self._redraw_time) and (not getattr(self, "_redraw_all_this_frame", False)):
+        is_night = _is_night_now(now.time().replace(second=0, microsecond=0))
+        clock_colour = NIGHT_COLOUR if is_night else DAY_COLOUR
+
+        # Redraw if:
+        # - minute changed
+        # - forced (reset, mode entry, etc)
+        # - colour regime changed (day<->night boundary)
+        if (
+            (current_time_str == self._last_time_str)
+            and (not self._redraw_time)
+            and (is_night == self._last_colour_is_night)
+        ):
             return
 
-        # Clear old clock area
         self._clear_clock_area()
-
-        # Choose colour based on night window (purely a color choice now)
-        clock_colour = NIGHT_COLOUR if _is_night_now(now.time().replace(second=0, microsecond=0)) else DAY_COLOUR
 
         # IMPORTANT: draw via Display helper so it marks the frame dirty
         self.draw_text(
@@ -79,9 +109,10 @@ class ClockScene(object):
         )
 
         self._last_time_str = current_time_str
+        self._last_colour_is_night = is_night
         self._redraw_time = False
 
     @Animator.KeyFrame.add(1, run_while_paused=True)
     def aaaa_begin_frame(self, count):
-        # reset each frame
+        # reset each frame (used by scenes that check _redraw_all_this_frame)
         self._redraw_all_this_frame = False

@@ -12,15 +12,14 @@ from setup import colours, fonts, frames
 # -----------------------------
 DATE_FONT = fonts.extrasmall
 DATE_POSITION = (40, 11)  # right-side, baseline y
-DATE_FORMAT = "%b %d"     # original: "Jan 09"
+DATE_FORMAT = "%b %d"     # "Jan 09"
 
 # Clear region for the date (RIGHT SIDE)
-# This keeps clock/date-left separate and prevents overlap.
-# extrasmall baseline ~11, height ~5-ish; clear a safe box.
 DATE_CLEAR_X0 = 40
 DATE_CLEAR_Y0 = 7
 DATE_CLEAR_X1 = 64
-DATE_CLEAR_Y1 = 12  # exclusive-ish in your draw_square usage
+DATE_CLEAR_Y1 = 12
+
 
 # -----------------------------
 # Moon phase gradient mapping
@@ -51,24 +50,24 @@ class DateScene(object):
         self.today_moonphase = None
         self.last_fetched_moonphase_day = None  # day-of-month when we last fetched
 
+        # Track Display-level full clears so we can redraw after canvas.Clear()
+        self._last_clear_token_seen = None
+
     # -----------------------------
     # Helpers
     # -----------------------------
     def _clear_date_area(self):
-        # Use Display.draw_square so dirty gets set.
         self.draw_square(
             DATE_CLEAR_X0, DATE_CLEAR_Y0, DATE_CLEAR_X1, DATE_CLEAR_Y1, colours.BLACK
         )
 
     def _draw_gradient_text(self, text: str, x: int, y: int, start_color, end_color):
-        # Draw each char via Display.draw_text to mark dirty.
-        # Character width for extrasmall is ~4 in your original code.
         n = len(text)
         if n <= 1:
             self.draw_text(DATE_FONT, x, y, start_color, text)
             return
 
-        char_width = 4
+        char_width = 4  # matches your original extrasmall spacing
         for i, ch in enumerate(text):
             t = i / (n - 1)
             r = int(start_color.red + (end_color.red - start_color.red) * t)
@@ -94,7 +93,6 @@ class DateScene(object):
 
             today_str = now.strftime("%Y-%m-%d")
             for day in forecast:
-                # startTime like "2026-01-09T00:00:00Z" -> date part
                 forecast_date = str(day.get("startTime", ""))[:10]
                 if forecast_date == today_str:
                     values = day.get("values", {}) or {}
@@ -111,28 +109,48 @@ class DateScene(object):
         return self.today_moonphase
 
     # -----------------------------
-    # Keyframe
+    # Keyframes
     # -----------------------------
+    @Animator.KeyFrame.add(0, tag="default")
+    def reset_date(self):
+        """
+        Called via Display.reset_scene() (divisor==0).
+        Also useful when switching modes default<->flight and any full-screen clear.
+        """
+        self._last_date_str = None
+        self._redraw_date = True
+        self._last_clear_token_seen = getattr(self, "_clear_token", None)
+        self._clear_date_area()
+
     @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def date(self, count):
+        # If Display performed a full canvas clear since we last drew, force redraw.
+        clear_token = getattr(self, "_clear_token", None)
+        if clear_token is not None and clear_token != self._last_clear_token_seen:
+            self._redraw_date = True
+            self._last_clear_token_seen = clear_token
 
         now = datetime.now()
         current_date_str = now.strftime(DATE_FORMAT)
 
         # Only redraw if changed or forced
-        if (current_date_str == self._last_date_str) and (not self._redraw_date) and (not getattr(self, "_redraw_all_this_frame", False)):
+        if (current_date_str == self._last_date_str) and (not self._redraw_date):
             return
 
-        # Moon phase gradient colors
         mp = self._moonphase()
         if mp is None:
             start_color = end_color = colours.RED
         else:
             start_color, end_color = map_moon_phase_to_color(mp)
 
-        # Clear region and draw
         self._clear_date_area()
-        self._draw_gradient_text(current_date_str, DATE_POSITION[0], DATE_POSITION[1], start_color, end_color)
+        self._draw_gradient_text(
+            current_date_str,
+            DATE_POSITION[0],
+            DATE_POSITION[1],
+            start_color,
+            end_color,
+        )
 
         self._last_date_str = current_date_str
         self._redraw_date = False

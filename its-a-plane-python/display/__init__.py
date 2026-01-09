@@ -169,6 +169,7 @@ class Display(
         # Setup canvas (IMPORTANT: keep and swap the returned canvas)
         self.canvas = self.matrix.CreateFrameCanvas()
         self.canvas.Clear()
+        self._clear_token = 0
 
         # Data to render
         self._data_index = 0
@@ -232,6 +233,15 @@ class Display(
     # -----------------------------
     def mark_dirty(self):
         self._dirty = True
+
+    def clear_canvas(self, reason: str = ""):
+        # full backbuffer clear that scenes can detect
+        self.canvas.Clear()
+        self._clear_token += 1
+        self._dirty = True
+        self._redraw_all_this_frame = True
+        if DEBUG and reason:
+            _dbg(f"CLEAR_CANVAS token={self._clear_token} reason={reason}")
 
     def draw_square(self, x0, y0, x1, y1, colour):
         self._dirty = True
@@ -310,8 +320,7 @@ class Display(
         self._dbg_clear_count += 1
         if DEBUG:
             _dbg(f"CLEAR_SCREEN fired count={self._dbg_clear_count}")
-        self.canvas.Clear()
-        self._dirty = True
+        self.clear_canvas("clear_screen")
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
     def check_for_loaded_data(self, count):
@@ -366,9 +375,8 @@ class Display(
             _dbg(f"MODE_SWITCH -> {self._mode} (enabled_tags={self.enabled_tags})")
 
             # Force a clean redraw:
-            self.reset_scene()      # runs divisor==0 keyframes (clear_screen etc)
-            self.canvas.Clear()     # belt + suspenders
-            self._dirty = True      # ensure present swaps
+            self.reset_scene()
+            self.clear_canvas(f"mode_switch->{self._mode}")
 
         if DEBUG_SHOW_PANEL_PIXELS:
             # (0,0) set in present (green heartbeat)
@@ -402,8 +410,7 @@ class Display(
                 self.pause()
 
             # keep backbuffer blank while off
-            self.canvas.Clear()
-            self._dirty = True
+            self.clear_canvas("policy_off")
 
             # force matrix brightness to 0
             if self.matrix.brightness != 0:
@@ -418,9 +425,7 @@ class Display(
             _dbg("POLICY leaving OFF: resume() + clear backbuffer")
             self.resume()
 
-            self.canvas.Clear()
-            self._dirty = True
-            self._redraw_all_this_frame = True
+            self.clear_canvas("policy_on_resume")
 
             # Force scenes to redraw next time they run
             if hasattr(self, "_redraw_time"):

@@ -1,3 +1,4 @@
+# scenes/temperature.py
 from datetime import datetime, timedelta
 from rgbmatrix import graphics
 
@@ -10,7 +11,7 @@ from utilities.temperature import grab_temperature_and_humidity
 # -----------------------------
 TEMPERATURE_REFRESH_SECONDS = 600
 TEMPERATURE_FONT = fonts.small
-TEMPERATURE_FONT_HEIGHT = 6
+TEMPERATURE_FONT_HEIGHT = 6  # baseline y
 
 # Clear region (top-right temperature area)
 TEMP_CLEAR_X0 = 40
@@ -29,6 +30,9 @@ class TemperatureScene(object):
         self._last_drawn_str = None
         self._needs_redraw = True
 
+        # NEW: track full-canvas clears from Display.clear_canvas()
+        self._last_clear_token_seen = None
+
     def _clear_temp_area(self):
         self.draw_square(
             TEMP_CLEAR_X0,
@@ -45,6 +49,27 @@ class TemperatureScene(object):
             int(colour_A.blue + ((colour_B.blue - colour_A.blue) * ratio)),
         )
 
+    def _sync_with_canvas_clear(self):
+        """
+        If Display did a full backbuffer clear (mode switch, off/on, clear_screen),
+        we must redraw our region even if our value didn't change.
+        """
+        clear_token = getattr(self, "_clear_token", None)
+        if clear_token is None:
+            return
+
+        if self._last_clear_token_seen is None:
+            # first time seeing it: treat as needs redraw
+            self._last_clear_token_seen = clear_token
+            self._needs_redraw = True
+            self._last_drawn_str = None
+            return
+
+        if clear_token != self._last_clear_token_seen:
+            self._last_clear_token_seen = clear_token
+            self._needs_redraw = True
+            self._last_drawn_str = None
+
     @Animator.KeyFrame.add(0, tag="default")
     def reset_temperature(self):
         self._needs_redraw = True
@@ -53,6 +78,9 @@ class TemperatureScene(object):
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def temperature(self, count):
+        # NEW: detect full-canvas clears and force redraw
+        self._sync_with_canvas_clear()
+
         # -----------------------------
         # FETCH LOGIC
         # -----------------------------
@@ -102,10 +130,13 @@ class TemperatureScene(object):
             ratio = max(0.0, min(1.0, humidity / 100.0))
             colour = self._colour_gradient(colours.WHITE, colours.DARK_BLUE, ratio)
 
+        # If unchanged visually AND we weren't forced to redraw, stop.
+        # (We already nulled _last_drawn_str on clear_token changes.)
         if display_str == self._last_drawn_str:
             self._needs_redraw = False
             return
 
+        # Clear only our region, then draw
         self._clear_temp_area()
 
         # Center text in temp region

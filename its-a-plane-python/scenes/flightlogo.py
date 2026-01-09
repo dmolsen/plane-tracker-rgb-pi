@@ -72,12 +72,12 @@ class FlightLogoScene(object):
             return None
         return data[idx]
 
-    @Animator.KeyFrame.add(0, tag="flight")
+    @Animator.KeyFrame.add(0, tag="flight1")
     def reset_logo(self):
         self._last_icao_drawn = None
         self._clear_logo_area()
 
-    @Animator.KeyFrame.add(1, tag="flight")
+    @Animator.KeyFrame.add(1, tag="flight1")
     def logo_details(self, count):
         f = self._current_flight()
         if not f:

@@ -132,12 +132,12 @@ class JourneyScene(object):
         self.mark_dirty()
         graphics.DrawLine(self.canvas, x0, y0, x1, y1, colour)
 
-    @Animator.KeyFrame.add(0, tag="flight")
+    @Animator.KeyFrame.add(0, tag="flight1")
     def reset_journey(self):
         self._last_render_key = None
         self._clear_all()
 
-    @Animator.KeyFrame.add(1, tag="flight")
+    @Animator.KeyFrame.add(1, tag="flight1")
     def journey(self, count):
         f = self._current_flight()
         if not f:

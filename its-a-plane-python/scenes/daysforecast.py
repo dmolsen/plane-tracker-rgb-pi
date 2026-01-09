@@ -112,6 +112,8 @@ class DaysForecastScene(object):
         # If Display performed a full canvas clear since we last drew, force redraw.
         self._sync_with_canvas_clear()
 
+        force = bool(getattr(self, "_redraw_all_this_frame", False))
+
         # Force redraw on night boundary (kept from original intent)
         now_time = datetime.now().replace(microsecond=0).time()
         if now_time == NIGHT_START_TIME or now_time == NIGHT_END_TIME:
@@ -131,8 +133,9 @@ class DaysForecastScene(object):
         elif self._last_hour != current_hour:
             need_fetch = True
 
-        # If nothing changed and no forced redraw, no-op
-        if (self._last_hour == current_hour) and (not self._redraw_forecast):
+        # Date-like behavior:
+        # If nothing changed AND not forced AND not flagged to redraw -> no-op
+        if (self._last_hour == current_hour) and (not self._redraw_forecast) and (not force):
             return
 
         # Update last_hour
@@ -144,11 +147,9 @@ class DaysForecastScene(object):
         if need_fetch:
             forecast = grab_forecast(tag="days")
             if not forecast:
-                # API failed -> use cache if available
                 if self._cached_forecast:
                     forecast = self._cached_forecast
                 else:
-                    # Nothing cached yet
                     return
             else:
                 self._cached_forecast = forecast

@@ -80,7 +80,7 @@ class ClockScene(object):
         current_time_str = _format_time(now)
 
         # Only redraw if minute changed or forced
-        if (current_time_str == self._last_time_str) and (not self._redraw_time):
+        if (current_time_str == self._last_time_str) and (not self._redraw_time) and (not getattr(self, "_redraw_all_this_frame", False)):
             return
 
         # Clear old clock area
@@ -100,3 +100,8 @@ class ClockScene(object):
 
         self._last_time_str = current_time_str
         self._redraw_time = False
+
+    @Animator.KeyFrame.add(1, run_while_paused=True)
+    def aaaa_begin_frame(self, count):
+        # reset each frame
+        self._redraw_all_this_frame = False

@@ -193,6 +193,7 @@ class Display(
         # Initialize animator + scenes
         super().__init__()
 
+        self._redraw_all_this_frame = False
         self.enabled_tags = {"clock"}  # start with just clock
 
         print("DEBUG pending_reset:", getattr(self, "_pending_reset", None), flush=True)
@@ -233,15 +234,18 @@ class Display(
 
     def draw_square(self, x0, y0, x1, y1, colour):
         self._dirty = True
+        self._redraw_all_this_frame = True
         for x in range(x0, x1):
             _ = graphics.DrawLine(self.canvas, x, y0, x, y1, colour)
 
     def draw_text(self, font, x, y, colour, text) -> int:
         self._dirty = True
+        self._redraw_all_this_frame = True
         return graphics.DrawText(self.canvas, font, x, y, colour, text)
 
     def set_pixel(self, x, y, r, g, b):
         self._dirty = True
+        self._redraw_all_this_frame = True
         self.canvas.SetPixel(x, y, int(r), int(g), int(b))
 
     def set_image(self, pil_img, x=0, y=0):
@@ -255,6 +259,7 @@ class Display(
 
         if self._canvas_has_setimage:
             self._dirty = True
+            self._redraw_all_this_frame = True
             self.canvas.SetImage(pil_img, x, y)
             return
 
@@ -262,6 +267,7 @@ class Display(
         if DEBUG_LOG_IMAGE_DRAW:
             _dbg("WARN canvas has no SetImage; using slow pixel blit fallback")
         self._dirty = True
+        self._redraw_all_this_frame = True
         img = pil_img.convert("RGB")
         w, h = img.size
         pix = img.load()

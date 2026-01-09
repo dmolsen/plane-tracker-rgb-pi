@@ -142,7 +142,7 @@ class DateScene(object):
         current_date_str = now.strftime(DATE_FORMAT)
 
         # Only redraw if changed or forced
-        if (current_date_str == self._last_date_str) and (not self._redraw_date):
+        if (current_date_str == self._last_date_str) and (not self._redraw_date) and (not getattr(self, "_redraw_all_this_frame", False)):
             return
 
         # Moon phase gradient colors

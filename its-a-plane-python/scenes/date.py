@@ -47,9 +47,6 @@ class DateScene(object):
         self._last_date_str = None
         self._redraw_date = True
 
-        # Flight/home transition tracking
-        self._was_showing_flights = False
-
         # Moon phase cache
         self.today_moonphase = None
         self.last_fetched_moonphase_day = None  # day-of-month when we last fetched
@@ -116,27 +113,8 @@ class DateScene(object):
     # -----------------------------
     # Keyframe
     # -----------------------------
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultDate")
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def date(self, count):
-        # Flights active?
-        showing_flights = len(getattr(self, "_data", [])) > 0
-
-        # If flights just started, clear date once so it doesn't linger
-        if showing_flights and not self._was_showing_flights:
-            self._was_showing_flights = True
-            self._clear_date_area()
-            return
-
-        # If flights still active, don't draw date
-        if showing_flights:
-            return
-
-        # If flights just ended, force redraw immediately
-        if (not showing_flights) and self._was_showing_flights:
-            self._was_showing_flights = False
-            self._redraw_date = True
-            self._last_date_str = None
-            self._clear_date_area()
 
         now = datetime.now()
         current_date_str = now.strftime(DATE_FORMAT)

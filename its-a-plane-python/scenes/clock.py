@@ -43,7 +43,6 @@ class ClockScene(object):
         super().__init__()
         self._last_time_str = None
         self._redraw_time = True
-        self._was_showing_flights = False
 
     def _clear_clock_area(self):
         self.draw_square(
@@ -54,27 +53,8 @@ class ClockScene(object):
             colours.BLACK,
         )
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultClock")
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def clock(self, count):
-        # Flights active?
-        showing_flights = len(getattr(self, "_data", [])) > 0
-
-        # If flights just started, clear clock once so it doesn't linger
-        if showing_flights and not self._was_showing_flights:
-            self._was_showing_flights = True
-            self._clear_clock_area()
-            return
-
-        # If flights still active, do not draw the clock
-        if showing_flights:
-            return
-
-        # If flights just ended, force redraw immediately
-        if (not showing_flights) and self._was_showing_flights:
-            self._was_showing_flights = False
-            self._redraw_time = True
-            self._last_time_str = None
-            self._clear_clock_area()
 
         now = datetime.now()
         current_time_str = _format_time(now)

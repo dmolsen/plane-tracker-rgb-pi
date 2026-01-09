@@ -33,7 +33,7 @@ class FlightDetailsScene(object):
         except Exception:
             return default
 
-    @Animator.KeyFrame.add(1, tag="flightDetails")
+    @Animator.KeyFrame.add(1, tag="flight")
     def flight_details(self, count):
         # Guard against no data
         if not getattr(self, "_data", None) or len(self._data) == 0:
@@ -104,6 +104,6 @@ class FlightDetailsScene(object):
                 if hasattr(self, "reset_scene"):
                     self.reset_scene()
 
-    @Animator.KeyFrame.add(0, tag="flightDetails")
+    @Animator.KeyFrame.add(0, tag="flight")
     def reset_scrolling(self):
         self.flight_position = screen.WIDTH

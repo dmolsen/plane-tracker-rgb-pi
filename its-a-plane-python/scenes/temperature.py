@@ -29,11 +29,6 @@ class TemperatureScene(object):
         self._last_drawn_str = None
         self._needs_redraw = True
 
-        self._was_showing_flights = False
-
-    def _flights_active(self) -> bool:
-        return len(getattr(self, "_data", [])) > 0
-
     def _clear_temp_area(self):
         self.draw_square(
             TEMP_CLEAR_X0,
@@ -50,25 +45,14 @@ class TemperatureScene(object):
             int(colour_A.blue + ((colour_B.blue - colour_A.blue) * ratio)),
         )
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultTemperature")
+    @Animator.KeyFrame.add(0, tag="default")
+    def reset_temperature(self):
+        self._needs_redraw = True
+        self._last_drawn_str = None
+        self._clear_temp_area()
+
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def temperature(self, count):
-        flights_active = self._flights_active()
-
-        # -----------------------------
-        # FLIGHT MODE HANDLING
-        # -----------------------------
-        if flights_active:
-            if not self._was_showing_flights:
-                self._was_showing_flights = True
-                self._clear_temp_area()
-            return
-
-        if self._was_showing_flights:
-            self._was_showing_flights = False
-            self._needs_redraw = True
-            self._last_drawn_str = None
-            self._clear_temp_area()
-
         # -----------------------------
         # FETCH LOGIC
         # -----------------------------
@@ -118,12 +102,10 @@ class TemperatureScene(object):
             ratio = max(0.0, min(1.0, humidity / 100.0))
             colour = self._colour_gradient(colours.WHITE, colours.DARK_BLUE, ratio)
 
-        # If unchanged visually, stop
         if display_str == self._last_drawn_str:
             self._needs_redraw = False
             return
 
-        # Clear only when we know we are going to draw something new
         self._clear_temp_area()
 
         # Center text in temp region
@@ -132,7 +114,6 @@ class TemperatureScene(object):
         middle_x = (TEMP_CLEAR_X0 + TEMP_CLEAR_X1) // 2
         start_x = middle_x - text_width // 2
 
-        # IMPORTANT: draw via Display helper so present() sees it
         self.draw_text(
             TEMPERATURE_FONT,
             start_x,

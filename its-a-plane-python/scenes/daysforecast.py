@@ -47,9 +47,6 @@ class DaysForecastScene(object):
         # icon_name -> PIL.Image (RGB) or None if missing/bad
         self._icon_cache = {}
 
-        # Track flight transitions (home <-> flight mode)
-        self._was_showing_flights = False
-
     def _clear_forecast_region(self):
         # Display.draw_square marks dirty for us
         self.draw_square(
@@ -96,25 +93,8 @@ class DaysForecastScene(object):
             return True
         return now.hour != self._last_fetch_hour
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="defaultForecast")
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def day(self, count):
-        showing_flights = len(getattr(self, "_data", [])) > 0
-
-        # Flights just started -> clear our region once so it doesn't linger
-        if showing_flights and not self._was_showing_flights:
-            self._was_showing_flights = True
-            self._clear_forecast_region()
-            return
-
-        # Flights active -> do nothing (no draw, no fetch)
-        if showing_flights:
-            return
-
-        # Flights just ended -> force redraw so forecast returns immediately
-        if (not showing_flights) and self._was_showing_flights:
-            self._was_showing_flights = False
-            self._redraw_forecast = True
-            self._clear_forecast_region()
 
         now = datetime.now()
 

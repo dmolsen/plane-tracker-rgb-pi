@@ -40,26 +40,27 @@ DISTANCE_DESTINATION_COLOUR = colours.LIGHT_LIGHT_RED
 DISTANCE_COLOUR = colours.LIGHT_TEAL
 DISTANCE_MEASURE = colours.LIGHT_DARK_TEAL
 
-# Clear regions (journey band + distance band + arrow)
+# -----------------------------
+# Clear regions (use EXCLUSIVE x1/y1)
+# -----------------------------
 JOURNEY_CLEAR = (
     JOURNEY_POSITION[0],
     JOURNEY_POSITION[1],
-    JOURNEY_POSITION[0] + JOURNEY_WIDTH - 1,
-    JOURNEY_POSITION[1] + JOURNEY_HEIGHT - 1,
+    JOURNEY_POSITION[0] + JOURNEY_WIDTH,
+    JOURNEY_POSITION[1] + JOURNEY_HEIGHT,
 )
 DIST_CLEAR = (
     DISTANCE_POSITION[0],
-    DISTANCE_POSITION[1] - 7,  # a bit above baseline for safety
-    DISTANCE_POSITION[0] + DISTANCE_WIDTH - 1,
-    DISTANCE_POSITION[1] + 1,
+    DISTANCE_POSITION[1] - 7,
+    DISTANCE_POSITION[0] + DISTANCE_WIDTH,
+    DISTANCE_POSITION[1] + 2,
 )
 ARROW_CLEAR = (
     ARROW_POINT_POSITION[0] - ARROW_WIDTH,
     ARROW_POINT_POSITION[1] - (ARROW_HEIGHT // 2),
-    ARROW_POINT_POSITION[0],
-    ARROW_POINT_POSITION[1] + (ARROW_HEIGHT // 2),
+    ARROW_POINT_POSITION[0] + 1,
+    ARROW_POINT_POSITION[1] + (ARROW_HEIGHT // 2) + 1,
 )
-
 
 def _unit_label() -> str:
     if str(DISTANCE_UNITS).lower() == "imperial":
@@ -68,27 +69,19 @@ def _unit_label() -> str:
         return "km"
     return "u"
 
-
 def _safe_num(v, default=0.0) -> float:
     try:
-        if v is None:
-            return default
-        return float(v)
+        return default if v is None else float(v)
     except Exception:
         return default
-
 
 def _safe_int(v, default=0) -> int:
     try:
-        if v is None:
-            return default
-        return int(float(v))
+        return default if v is None else int(float(v))
     except Exception:
         return default
 
-
 def _safe_delay_minutes(real_ts, sched_ts):
-    # Both are expected to be epoch seconds
     try:
         if real_ts in (None, 0) or sched_ts in (None, 0):
             return None
@@ -96,9 +89,7 @@ def _safe_delay_minutes(real_ts, sched_ts):
     except Exception:
         return None
 
-
 def _delay_colour(minutes):
-    # Returns a colour based on delay minutes (None -> grey)
     if minutes is None:
         return colours.LIGHT_GREY
     try:
@@ -106,7 +97,6 @@ def _delay_colour(minutes):
     except Exception:
         return colours.LIGHT_GREY
 
-    # Your original bins (kept)
     if m <= 20:
         return colours.LIGHT_MID_GREEN
     if 20 < m <= 40:
@@ -123,11 +113,7 @@ def _delay_colour(minutes):
 class JourneyScene(object):
     def __init__(self):
         super().__init__()
-        self._was_showing_flights = False
-        self._last_render_key = None  # detect flight/index changes
-
-    def _flights_active(self) -> bool:
-        return len(getattr(self, "_data", [])) > 0
+        self._last_render_key = None
 
     def _clear_all(self):
         self.draw_square(*JOURNEY_CLEAR, colours.BLACK)
@@ -135,36 +121,30 @@ class JourneyScene(object):
         self.draw_square(*ARROW_CLEAR, colours.BLACK)
 
     def _current_flight(self):
-        if not getattr(self, "_data", None):
+        data = getattr(self, "_data", None)
+        idx = getattr(self, "_data_index", 0)
+        if not data or idx < 0 or idx >= len(data):
             return None
-        if getattr(self, "_data_index", 0) < 0 or self._data_index >= len(self._data):
-            return None
-        return self._data[self._data_index]
+        return data[idx]
 
-    @Animator.KeyFrame.add(1, tag="flightJourney")
+    def _draw_line(self, x0, y0, x1, y1, colour):
+        # IMPORTANT: mark dirty even though we're using raw graphics calls
+        self.mark_dirty()
+        graphics.DrawLine(self.canvas, x0, y0, x1, y1, colour)
+
+    @Animator.KeyFrame.add(0, tag="flight")
+    def reset_journey(self):
+        self._last_render_key = None
+        self._clear_all()
+
+    @Animator.KeyFrame.add(1, tag="flight")
     def journey(self, count):
-        flights_active = self._flights_active()
-
-        # If flights ended, clear once and stop drawing.
-        if not flights_active:
-            if self._was_showing_flights:
-                self._was_showing_flights = False
-                self._last_render_key = None
-                self._clear_all()
-            return
-
-        # Flights just started: clear areas once
-        if not self._was_showing_flights:
-            self._was_showing_flights = True
-            self._clear_all()
-
         f = self._current_flight()
         if not f:
             return
 
-        # Create a render key so we redraw when the flight or relevant values change
         render_key = (
-            self._data_index,
+            getattr(self, "_data_index", 0),
             f.get("origin"),
             f.get("destination"),
             f.get("distance_origin"),
@@ -174,12 +154,10 @@ class JourneyScene(object):
             f.get("time_estimated_arrival"),
             f.get("time_scheduled_arrival"),
         )
-
         if render_key == self._last_render_key:
             return
         self._last_render_key = render_key
 
-        # Clear all journey regions before drawing fresh
         self._clear_all()
 
         origin = f.get("origin") or ""
@@ -188,14 +166,16 @@ class JourneyScene(object):
         dist_origin = _safe_num(f.get("distance_origin"), 0.0)
         dist_destination = _safe_num(f.get("distance_destination"), 0.0)
 
-        # Compute delays
-        dep_delay = _safe_delay_minutes(f.get("time_real_departure"), f.get("time_scheduled_departure"))
-        arr_delay = _safe_delay_minutes(f.get("time_estimated_arrival"), f.get("time_scheduled_arrival"))
+        dep_delay = _safe_delay_minutes(
+            f.get("time_real_departure"), f.get("time_scheduled_departure")
+        )
+        arr_delay = _safe_delay_minutes(
+            f.get("time_estimated_arrival"), f.get("time_scheduled_arrival")
+        )
 
         origin_color = _delay_colour(dep_delay)
         destination_color = _delay_colour(arr_delay)
 
-        # --- ROUTE TEXT (origin destination)
         origin_font = JOURNEY_FONT_SELECTED if origin == JOURNEY_CODE_SELECTED else JOURNEY_FONT
         dest_font = JOURNEY_FONT_SELECTED if destination == JOURNEY_CODE_SELECTED else JOURNEY_FONT
 
@@ -207,7 +187,7 @@ class JourneyScene(object):
             origin if origin else JOURNEY_BLANK_FILLER,
         )
 
-        _ = self.draw_text(
+        self.draw_text(
             dest_font,
             JOURNEY_POSITION[0] + text_length + JOURNEY_SPACING + 1,
             JOURNEY_HEIGHT,
@@ -230,7 +210,6 @@ class JourneyScene(object):
         distance_origin_x = center_x - half_width + (half_width - w_o) // 2
         distance_destination_x = center_x + (half_width - w_d) // 2
 
-        # origin distance
         x = distance_origin_x
         for ch in distance_origin_text:
             x += self.draw_text(
@@ -241,7 +220,6 @@ class JourneyScene(object):
                 ch,
             )
 
-        # destination distance
         x = distance_destination_x
         for ch in distance_destination_text:
             x += self.draw_text(
@@ -252,7 +230,7 @@ class JourneyScene(object):
                 ch,
             )
 
-        # --- ARROW (proportional colouring)
+        # --- ARROW
         x = ARROW_POINT_POSITION[0] - ARROW_WIDTH + 1
         y1 = ARROW_POINT_POSITION[1] - (ARROW_HEIGHT // 2)
         y2 = ARROW_POINT_POSITION[1] + (ARROW_HEIGHT // 2)
@@ -260,10 +238,9 @@ class JourneyScene(object):
         d_o = _safe_int(dist_origin, 0)
         d_d = _safe_int(dist_destination, 0)
 
-        # If unknown/zero, draw a neutral arrow
         if d_o <= 0 or d_d <= 0:
             for _ in range(ARROW_WIDTH):
-                graphics.DrawLine(self.canvas, x, y1, x, y2, ARROW_COLOUR)
+                self._draw_line(x, y1, x, y2, ARROW_COLOUR)
                 x += 1
                 y1 += 1
                 y2 -= 1
@@ -272,7 +249,6 @@ class JourneyScene(object):
         total = d_o + d_d
         origin_ratio = d_o / total
 
-        # Map ratio to 0..5 pixels (same style as your original)
         if origin_ratio <= 0.10:
             origin_pixels = 0
         elif origin_ratio <= 0.30:
@@ -289,13 +265,13 @@ class JourneyScene(object):
         dest_pixels = ARROW_WIDTH - origin_pixels
 
         for _ in range(origin_pixels):
-            graphics.DrawLine(self.canvas, x, y1, x, y2, DISTANCE_ORIGIN_COLOUR)
+            self._draw_line(x, y1, x, y2, DISTANCE_ORIGIN_COLOUR)
             x += 1
             y1 += 1
             y2 -= 1
 
         for _ in range(dest_pixels):
-            graphics.DrawLine(self.canvas, x, y1, x, y2, DISTANCE_DESTINATION_COLOUR)
+            self._draw_line(x, y1, x, y2, DISTANCE_DESTINATION_COLOUR)
             x += 1
             y1 += 1
             y2 -= 1

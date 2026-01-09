@@ -28,7 +28,7 @@ from rgbmatrix import RGBMatrix, RGBMatrixOptions
 DEBUG = True
 DEBUG_EVERY_N_FRAMES = 30           # policy prints
 DEBUG_SUMMARY_EVERY_SECONDS = 5.0   # periodic summary
-DEBUG_SHOW_PANEL_PIXELS = True      # tiny pixels at top-left for state visibility
+DEBUG_SHOW_PANEL_PIXELS = False      # tiny pixels at top-left for state visibility
 
 # If your icons/logos still don't show, set True to log missing SetImage support:
 DEBUG_LOG_IMAGE_DRAW = True
@@ -194,7 +194,7 @@ class Display(
         super().__init__()
 
         self._redraw_all_this_frame = False
-        self.enabled_tags = {"clock"}  # start with just clock
+        self.enabled_tags = {"defaultClock","defaultDate"}  # start with just clock
 
         print("DEBUG pending_reset:", getattr(self, "_pending_reset", None), flush=True)
 
@@ -393,6 +393,7 @@ class Display(
             self.resume()
             self.canvas.Clear()
             self._dirty = True
+            self._redraw_all_this_frame = True
 
         if self.matrix.brightness != target_brightness:
             self.matrix.brightness = target_brightness

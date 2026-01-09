@@ -30,7 +30,7 @@ class TemperatureScene(object):
         self._last_drawn_str = None
         self._needs_redraw = True
 
-        # NEW: track full-canvas clears from Display.clear_canvas()
+        # Track full-canvas clears from Display.clear_canvas()
         self._last_clear_token_seen = None
 
     def _clear_temp_area(self):
@@ -72,14 +72,23 @@ class TemperatureScene(object):
 
     @Animator.KeyFrame.add(0, tag="default")
     def reset_temperature(self):
+        """
+        Called via Display.reset_scene() (divisor==0).
+        Good moment to clear our owned region and force a redraw.
+        """
         self._needs_redraw = True
         self._last_drawn_str = None
+        self._last_clear_token_seen = getattr(self, "_clear_token", None)
         self._clear_temp_area()
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def temperature(self, count):
-        # NEW: detect full-canvas clears and force redraw
+        # Detect full-canvas clears and force redraw
         self._sync_with_canvas_clear()
+
+        # If any other widget drew this frame (clock minute tick), we must redraw too,
+        # otherwise we can "disappear" after SwapOnVSync due to dirty-driven swapping.
+        force = bool(getattr(self, "_redraw_all_this_frame", False))
 
         # -----------------------------
         # FETCH LOGIC
@@ -114,7 +123,12 @@ class TemperatureScene(object):
                     )
                     self._needs_redraw = True
 
-        if not self._needs_redraw or not self._cached_temp:
+        # If we have nothing to render yet, bail
+        if not self._cached_temp:
+            return
+
+        # If nothing changed and we're not forced, bail
+        if (not self._needs_redraw) and (not force):
             return
 
         # -----------------------------
@@ -130,9 +144,8 @@ class TemperatureScene(object):
             ratio = max(0.0, min(1.0, humidity / 100.0))
             colour = self._colour_gradient(colours.WHITE, colours.DARK_BLUE, ratio)
 
-        # If unchanged visually AND we weren't forced to redraw, stop.
-        # (We already nulled _last_drawn_str on clear_token changes.)
-        if display_str == self._last_drawn_str:
+        # If visually unchanged and not forced, skip
+        if (display_str == self._last_drawn_str) and (not force):
             self._needs_redraw = False
             return
 

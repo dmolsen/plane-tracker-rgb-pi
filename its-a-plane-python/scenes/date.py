@@ -133,8 +133,10 @@ class DateScene(object):
         now = datetime.now()
         current_date_str = now.strftime(DATE_FORMAT)
 
+        force = bool(getattr(self, "_redraw_all_this_frame", False))
+
         # Only redraw if changed or forced
-        if (current_date_str == self._last_date_str) and (not self._redraw_date):
+        if (current_date_str == self._last_date_str) and (not self._redraw_date) and (not force):
             return
 
         mp = self._moonphase()

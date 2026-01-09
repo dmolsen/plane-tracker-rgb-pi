@@ -12,11 +12,13 @@ DATA_INDEX_POSITION = (52, 24)
 DATA_INDEX_FONT = fonts.extrasmall
 DATA_INDEX_COLOUR = colours.GREY
 
-# Band we own (full width, y-range covering the crawl + pager baseline)
+# Band we own (full width, y-range covering the crawl + pager)
+# NOTE: Display.draw_square uses DrawLine(..., y0, y1, ...) which is inclusive in y,
+# and range(x0, x1) which is exclusive in x.
 BAND_X0 = 0
 BAND_X1 = screen.WIDTH
 BAND_Y0 = FLIGHT_NO_DISTANCE_FROM_TOP - FLIGHT_NO_TEXT_HEIGHT
-BAND_Y1 = FLIGHT_NO_DISTANCE_FROM_TOP  # exclusive in your draw_square usage
+BAND_Y1 = FLIGHT_NO_DISTANCE_FROM_TOP + 1  # +1 for safety (still tiny)
 
 
 class FlightDetailsScene(object):
@@ -40,6 +42,7 @@ class FlightDetailsScene(object):
 
     @Animator.KeyFrame.add(0, tag="flight")
     def reset_scrolling(self):
+        # Called on reset_scene() (mode switch / clear_screen)
         self.flight_position = screen.WIDTH
         self._clear_band()
 
@@ -52,21 +55,30 @@ class FlightDetailsScene(object):
         # Clear our band each tick for clean scroll
         self._clear_band()
 
-        flight_no_text_length = 0
-
         callsign = self._get_current("callsign", "")
         owner_icao = self._get_current("owner_icao", "")
+        airline = self._get_current("airline", "")
 
+        # Build display string
+        flight_no = ""
         if callsign and callsign != "N/A":
             if owner_icao and callsign.startswith(owner_icao):
                 flight_no = callsign[len(owner_icao):]
             else:
                 flight_no = callsign
 
-            airline = self._get_current("airline", "")
             if airline:
                 flight_no = f"{airline} {flight_no}"
 
+        # If we have nothing to show, don't scroll a zero-length string forever.
+        # (Optional: you can show a placeholder like "--")
+        if not flight_no and len(data) <= 1:
+            return
+
+        flight_no_text_length = 0
+
+        # Draw crawl text
+        if flight_no:
             for ch in flight_no:
                 flight_no_text_length += self.draw_text(
                     FLIGHT_NO_FONT,
@@ -76,7 +88,7 @@ class FlightDetailsScene(object):
                     ch,
                 )
 
-        # Pager
+        # Pager (fixed position)
         if len(data) > 1:
             pager_len = self.draw_text(
                 DATA_INDEX_FONT,
@@ -85,17 +97,18 @@ class FlightDetailsScene(object):
                 DATA_INDEX_COLOUR,
                 f"{self._data_index + 1}/{len(data)}",
             )
+            # Include pager width so "fully off-screen" accounts for it
             flight_no_text_length += pager_len
 
-        # Scroll
+        # Scroll left
         self.flight_position -= 1
 
-        # Loop to next flight
+        # Wrap / advance flight when fully off-screen
+        # If flight_no_text_length is 0 (e.g., blank crawl but pager exists),
+        # this still works because pager_len was added above when len(data)>1.
         if self.flight_position + flight_no_text_length < 0:
             self.flight_position = screen.WIDTH
-
             if len(data) > 1:
                 self._data_index = (self._data_index + 1) % len(data)
-
-            # Only reset THIS scene (don’t nuke the whole display)
-            self.reset_scrolling()
+            # IMPORTANT: do NOT call reset_scrolling() here (avoid extra clear/blink).
+            return

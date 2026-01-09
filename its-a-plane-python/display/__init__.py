@@ -358,6 +358,17 @@ class Display(
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
 
         flights_active = len(getattr(self, "_data", [])) > 0
+        new_mode = "flight" if flights_active else "default"
+        if new_mode != self._mode:
+            self._mode = new_mode
+            self.enabled_tags = {"flight"} if new_mode == "flight" else {"default"}
+
+            _dbg(f"MODE_SWITCH -> {self._mode} (enabled_tags={self.enabled_tags})")
+
+            # Force a clean redraw:
+            self.reset_scene()      # runs divisor==0 keyframes (clear_screen etc)
+            self.canvas.Clear()     # belt + suspenders
+            self._dirty = True      # ensure present swaps
 
         if DEBUG_SHOW_PANEL_PIXELS:
             # (0,0) set in present (green heartbeat)

@@ -194,7 +194,7 @@ class Display(
         super().__init__()
 
         self._redraw_all_this_frame = False
-        self.enabled_tags = {"defaultClock","defaultDate"}  # start with just clock
+        self.enabled_tags = {"defaultClock","defaultDate","flightDetails"}  # start with just clock
 
         print("DEBUG pending_reset:", getattr(self, "_pending_reset", None), flush=True)
 

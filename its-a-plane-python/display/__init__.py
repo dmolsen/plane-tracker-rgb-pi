@@ -246,8 +246,15 @@ class Display(
     def draw_square(self, x0, y0, x1, y1, colour):
         self._dirty = True
         self._redraw_all_this_frame = True
+
+        # Treat x1/y1 as EXCLUSIVE bounds.
+        # rgbmatrix DrawLine is inclusive, so we use y1-1.
+        y_end = y1 - 1
+        if y_end < y0:
+            return
+
         for x in range(x0, x1):
-            _ = graphics.DrawLine(self.canvas, x, y0, x, y1, colour)
+            _ = graphics.DrawLine(self.canvas, x, y0, x, y_end, colour)
 
     def draw_text(self, font, x, y, colour, text) -> int:
         self._dirty = True

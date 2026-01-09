@@ -275,6 +275,18 @@ class Display(
             for ix in range(w):
                 r, g, b = pix[ix, iy]
                 self.canvas.SetPixel(x + ix, y + iy, int(r), int(g), int(b))
+    
+    def _set_matrix_brightness(self, value: int):
+        v = int(max(0, min(100, value)))
+        # Prefer the real API if present
+        if hasattr(self.matrix, "SetBrightness"):
+            self.matrix.SetBrightness(v)
+        else:
+            # fallback (some bindings expose brightness as a property)
+            try:
+                self.matrix.brightness = v
+            except Exception:
+                pass
 
     # =============================
     # DEBUG HELPERS
@@ -360,6 +372,8 @@ class Display(
                 f"target_brightness={target_brightness} should_off={should_be_off} "
                 f"paused={self.paused} eff_off={self._effective_off} "
                 f"matrix.brightness={getattr(self.matrix,'brightness',None)}"
+                f"has_SetBrightness={hasattr(self.matrix,'SetBrightness')} "
+                f"matrix_brightness_attr={getattr(self.matrix,'brightness',None)}"
             )
 
         # detect unexpected toggling
@@ -381,7 +395,7 @@ class Display(
 
             # force matrix brightness to 0
             if self.matrix.brightness != 0:
-                self.matrix.brightness = 0
+                self._set_matrix_brightness(0)
 
             self._dbg_summary()
             return
@@ -391,12 +405,19 @@ class Display(
             self._effective_off = False
             _dbg("POLICY leaving OFF: resume() + clear backbuffer")
             self.resume()
+
             self.canvas.Clear()
             self._dirty = True
             self._redraw_all_this_frame = True
 
+            # Force scenes to redraw next time they run
+            if hasattr(self, "_redraw_time"):
+                self._redraw_time = True
+            if hasattr(self, "_redraw_date"):
+                self._redraw_date = True
+
         if self.matrix.brightness != target_brightness:
-            self.matrix.brightness = target_brightness
+            self._set_matrix_brightness(target_brightness)
 
         self._dbg_summary()
 

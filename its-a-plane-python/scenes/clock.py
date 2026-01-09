@@ -53,30 +53,23 @@ class ClockScene(object):
             colours.BLACK,
         )
 
-    @Animator.KeyFrame.add(0, tag="default")
-    def reset_clock(self):
-        # Called on reset_scene() (mode switch, resume-from-off, etc.)
-        self._last_time_str = None
-        self._redraw_time = True
-        self._clear_clock_area()
-
     @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
     def clock(self, count):
+
         now = datetime.now()
         current_time_str = _format_time(now)
 
         # Only redraw if minute changed or forced
-        if (current_time_str == self._last_time_str) and (not self._redraw_time):
+        if (current_time_str == self._last_time_str) and (not self._redraw_time) and (not getattr(self, "_redraw_all_this_frame", False)):
             return
 
+        # Clear old clock area
         self._clear_clock_area()
 
-        clock_colour = (
-            NIGHT_COLOUR
-            if _is_night_now(now.time().replace(second=0, microsecond=0))
-            else DAY_COLOUR
-        )
+        # Choose colour based on night window (purely a color choice now)
+        clock_colour = NIGHT_COLOUR if _is_night_now(now.time().replace(second=0, microsecond=0)) else DAY_COLOUR
 
+        # IMPORTANT: draw via Display helper so it marks the frame dirty
         self.draw_text(
             CLOCK_FONT,
             CLOCK_POSITION[0],
@@ -87,3 +80,8 @@ class ClockScene(object):
 
         self._last_time_str = current_time_str
         self._redraw_time = False
+
+    @Animator.KeyFrame.add(1, run_while_paused=True)
+    def aaaa_begin_frame(self, count):
+        # reset each frame
+        self._redraw_all_this_frame = False

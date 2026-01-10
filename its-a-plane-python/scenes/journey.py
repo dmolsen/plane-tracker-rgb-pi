@@ -1,3 +1,4 @@
+# scenes/journey.py
 from utilities.animator import Animator
 from setup import colours, fonts
 from rgbmatrix import graphics
@@ -41,7 +42,7 @@ DISTANCE_COLOUR = colours.LIGHT_TEAL
 DISTANCE_MEASURE = colours.LIGHT_DARK_TEAL
 
 # -----------------------------
-# Clear regions (use EXCLUSIVE x1/y1)
+# Clear regions (EXCLUSIVE x1/y1)
 # -----------------------------
 JOURNEY_CLEAR = (
     JOURNEY_POSITION[0],
@@ -49,12 +50,15 @@ JOURNEY_CLEAR = (
     JOURNEY_POSITION[0] + JOURNEY_WIDTH,
     JOURNEY_POSITION[1] + JOURNEY_HEIGHT,
 )
+
+# extrasmall baseline is at y=16; clear a safe band around it
 DIST_CLEAR = (
     DISTANCE_POSITION[0],
     DISTANCE_POSITION[1] - 7,
     DISTANCE_POSITION[0] + DISTANCE_WIDTH,
     DISTANCE_POSITION[1] + 2,
 )
+
 ARROW_CLEAR = (
     ARROW_POINT_POSITION[0] - ARROW_WIDTH,
     ARROW_POINT_POSITION[1] - (ARROW_HEIGHT // 2),
@@ -62,12 +66,15 @@ ARROW_CLEAR = (
     ARROW_POINT_POSITION[1] + (ARROW_HEIGHT // 2) + 1,
 )
 
+
 def _unit_label() -> str:
-    if str(DISTANCE_UNITS).lower() == "imperial":
+    u = str(DISTANCE_UNITS).lower()
+    if u == "imperial":
         return "mi"
-    if str(DISTANCE_UNITS).lower() == "metric":
+    if u == "metric":
         return "km"
     return "u"
+
 
 def _safe_num(v, default=0.0) -> float:
     try:
@@ -75,11 +82,13 @@ def _safe_num(v, default=0.0) -> float:
     except Exception:
         return default
 
+
 def _safe_int(v, default=0) -> int:
     try:
         return default if v is None else int(float(v))
     except Exception:
         return default
+
 
 def _safe_delay_minutes(real_ts, sched_ts):
     try:
@@ -89,6 +98,7 @@ def _safe_delay_minutes(real_ts, sched_ts):
     except Exception:
         return None
 
+
 def _delay_colour(minutes):
     if minutes is None:
         return colours.LIGHT_GREY
@@ -97,6 +107,7 @@ def _delay_colour(minutes):
     except Exception:
         return colours.LIGHT_GREY
 
+    # match your newer thresholds (same style you’ve been using)
     if m <= 20:
         return colours.LIGHT_MID_GREEN
     if 20 < m <= 40:
@@ -114,6 +125,7 @@ class JourneyScene(object):
     def __init__(self):
         super().__init__()
         self._last_render_key = None
+        self._last_clear_token_seen = None
 
     def _clear_all(self):
         self.draw_square(*JOURNEY_CLEAR, colours.BLACK)
@@ -127,22 +139,45 @@ class JourneyScene(object):
             return None
         return data[idx]
 
+    def _sync_with_canvas_clear(self):
+        """
+        If Display did a full backbuffer clear (clear_canvas), force a redraw.
+        """
+        clear_token = getattr(self, "_clear_token", None)
+        if clear_token is None:
+            return False
+
+        if self._last_clear_token_seen is None:
+            self._last_clear_token_seen = clear_token
+            return True
+
+        if clear_token != self._last_clear_token_seen:
+            self._last_clear_token_seen = clear_token
+            return True
+
+        return False
+
     def _draw_line(self, x0, y0, x1, y1, colour):
-        # IMPORTANT: mark dirty even though we're using raw graphics calls
+        # If you ever call raw graphics, mark dirty explicitly.
         self.mark_dirty()
         graphics.DrawLine(self.canvas, x0, y0, x1, y1, colour)
 
-    @Animator.KeyFrame.add(0, tag="flight1")
+    @Animator.KeyFrame.add(0, tag="flight")
     def reset_journey(self):
         self._last_render_key = None
+        self._last_clear_token_seen = getattr(self, "_clear_token", None)
         self._clear_all()
 
-    @Animator.KeyFrame.add(1, tag="flight1")
+    @Animator.KeyFrame.add(1, tag="flight")
     def journey(self, count):
         f = self._current_flight()
         if not f:
             return
 
+        force = bool(getattr(self, "_redraw_all_this_frame", False))
+        force = force or self._sync_with_canvas_clear()
+
+        # Only redraw when relevant flight data changes
         render_key = (
             getattr(self, "_data_index", 0),
             f.get("origin"),
@@ -154,7 +189,7 @@ class JourneyScene(object):
             f.get("time_estimated_arrival"),
             f.get("time_scheduled_arrival"),
         )
-        if render_key == self._last_render_key:
+        if (not force) and (render_key == self._last_render_key):
             return
         self._last_render_key = render_key
 
@@ -179,33 +214,37 @@ class JourneyScene(object):
         origin_font = JOURNEY_FONT_SELECTED if origin == JOURNEY_CODE_SELECTED else JOURNEY_FONT
         dest_font = JOURNEY_FONT_SELECTED if destination == JOURNEY_CODE_SELECTED else JOURNEY_FONT
 
-        text_length = self.draw_text(
+        # --- ORIGIN / DEST TEXT
+        left_text = origin if origin else JOURNEY_BLANK_FILLER
+        right_text = destination if destination else JOURNEY_BLANK_FILLER
+
+        origin_w = self.draw_text(
             origin_font,
             JOURNEY_POSITION[0],
             JOURNEY_HEIGHT,
             origin_color,
-            origin if origin else JOURNEY_BLANK_FILLER,
+            left_text,
         )
 
         self.draw_text(
             dest_font,
-            JOURNEY_POSITION[0] + text_length + JOURNEY_SPACING + 1,
+            JOURNEY_POSITION[0] + origin_w + JOURNEY_SPACING + 1,
             JOURNEY_HEIGHT,
             destination_color,
-            destination if destination else JOURNEY_BLANK_FILLER,
+            right_text,
         )
 
-        # --- DISTANCES
+        # --- DISTANCES (two halves)
         units = _unit_label()
         distance_origin_text = f"{dist_origin:.0f}{units}"
         distance_destination_text = f"{dist_destination:.0f}{units}"
 
         center_x = (16 + 64) // 2
         half_width = (64 - 16) // 2
-        font_character_width = 4
+        char_w = 4  # extrasmall approx width
 
-        w_o = len(distance_origin_text) * font_character_width
-        w_d = len(distance_destination_text) * font_character_width
+        w_o = len(distance_origin_text) * char_w
+        w_d = len(distance_destination_text) * char_w
 
         distance_origin_x = center_x - half_width + (half_width - w_o) // 2
         distance_destination_x = center_x + (half_width - w_d) // 2
@@ -230,7 +269,7 @@ class JourneyScene(object):
                 ch,
             )
 
-        # --- ARROW
+        # --- ARROW (5 columns, tapered)
         x = ARROW_POINT_POSITION[0] - ARROW_WIDTH + 1
         y1 = ARROW_POINT_POSITION[1] - (ARROW_HEIGHT // 2)
         y2 = ARROW_POINT_POSITION[1] + (ARROW_HEIGHT // 2)
@@ -238,6 +277,7 @@ class JourneyScene(object):
         d_o = _safe_int(dist_origin, 0)
         d_d = _safe_int(dist_destination, 0)
 
+        # Unknown/zero distances: grey arrow
         if d_o <= 0 or d_d <= 0:
             for _ in range(ARROW_WIDTH):
                 self._draw_line(x, y1, x, y2, ARROW_COLOUR)

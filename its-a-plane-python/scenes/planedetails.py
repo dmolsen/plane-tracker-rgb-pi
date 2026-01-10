@@ -9,16 +9,16 @@ from config import DISTANCE_UNITS
 PLANE_COLOUR = colours.LIGHT_MID_BLUE
 PLANE_DISTANCE_COLOUR = colours.LIGHT_PINK
 
-PLANE_DISTANCE_FROM_TOP = 31      # baseline Y
-PLANE_TEXT_HEIGHT = 6             # approx font height
+PLANE_DISTANCE_FROM_TOP = 31  # baseline
+PLANE_TEXT_HEIGHT = 8
 PLANE_FONT = fonts.small
 
 # Clear only the bottom band we own
 # NOTE: Display.draw_square uses DrawLine with inclusive y, so keep Y1 as screen.HEIGHT (exclusive-ish by range(x))
 PLANE_CLEAR_X0 = 0
-PLANE_CLEAR_Y0 = PLANE_DISTANCE_FROM_TOP - PLANE_TEXT_HEIGHT
+PLANE_CLEAR_Y0 = PLANE_DISTANCE_FROM_TOP - (PLANE_TEXT_HEIGHT - 1)  # 31 - 7 = 24
 PLANE_CLEAR_X1 = screen.WIDTH
-PLANE_CLEAR_Y1 = screen.HEIGHT
+PLANE_CLEAR_Y1 = screen.HEIGHT 
 
 
 def _unit_label() -> str:

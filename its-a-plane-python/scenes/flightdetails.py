@@ -1,14 +1,14 @@
 from utilities.animator import Animator
 from setup import colours, fonts, screen
 
-FLIGHT_NO_DISTANCE_FROM_TOP = 24
+FLIGHT_NO_DISTANCE_FROM_TOP = 23   # baseline
 FLIGHT_NO_TEXT_HEIGHT = 8
 FLIGHT_NO_FONT = fonts.small
 
 FLIGHT_NUMBER_ALPHA_COLOUR = colours.LIGHT_PURPLE
 FLIGHT_NUMBER_NUMERIC_COLOUR = colours.LIGHT_ORANGE
 
-DATA_INDEX_POSITION = (52, 24)
+DATA_INDEX_POSITION = (52, 23)  # keep pager baseline aligned
 DATA_INDEX_FONT = fonts.extrasmall
 DATA_INDEX_COLOUR = colours.GREY
 
@@ -17,8 +17,8 @@ DATA_INDEX_COLOUR = colours.GREY
 # and range(x0, x1) which is exclusive in x.
 BAND_X0 = 0
 BAND_X1 = screen.WIDTH
-BAND_Y0 = FLIGHT_NO_DISTANCE_FROM_TOP - FLIGHT_NO_TEXT_HEIGHT
-BAND_Y1 = FLIGHT_NO_DISTANCE_FROM_TOP  # +1 for safety (still tiny)
+BAND_Y0 = FLIGHT_NO_DISTANCE_FROM_TOP - (FLIGHT_NO_TEXT_HEIGHT - 1)  # 23 - 7 = 16
+BAND_Y1 = FLIGHT_NO_DISTANCE_FROM_TOP + 1                             # 24 (exclusive)
 
 
 class FlightDetailsScene(object):

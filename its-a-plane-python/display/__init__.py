@@ -137,7 +137,7 @@ class Display(
 
         # You discovered adafruit-hat works; keep hard-coded for now.
         # If you later want pwm again, switch carefully.
-        options.hardware_mapping = "adafruit-hat"
+        options.hardware_mapping = "adafruit-hat-pwm" if HAT_PWM_ENABLED else "adafruit-hat"
 
         options.rows = 32
         options.cols = 64

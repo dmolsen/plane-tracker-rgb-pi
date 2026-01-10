@@ -18,7 +18,7 @@ DATA_INDEX_COLOUR = colours.GREY
 BAND_X0 = 0
 BAND_X1 = screen.WIDTH
 BAND_Y0 = FLIGHT_NO_DISTANCE_FROM_TOP - FLIGHT_NO_TEXT_HEIGHT
-BAND_Y1 = FLIGHT_NO_DISTANCE_FROM_TOP + 1  # +1 for safety (still tiny)
+BAND_Y1 = FLIGHT_NO_DISTANCE_FROM_TOP  # +1 for safety (still tiny)
 
 
 class FlightDetailsScene(object):

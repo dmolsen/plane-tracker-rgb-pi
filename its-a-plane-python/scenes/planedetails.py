@@ -4,25 +4,25 @@ from setup import colours, fonts, screen
 from config import DISTANCE_UNITS
 
 # -----------------------------
-# CONFIG / LAYOUT (matches original)
+# CONFIG / LAYOUT
 # -----------------------------
 PLANE_COLOUR = colours.LIGHT_MID_BLUE
 PLANE_DISTANCE_COLOUR = colours.LIGHT_PINK
 
-PLANE_DISTANCE_FROM_TOP = 31  # baseline
-PLANE_TEXT_HEIGHT = 8
+PLANE_DISTANCE_FROM_TOP = 31  # baseline Y (bottom row baseline for 5x8 font)
+PLANE_TEXT_HEIGHT = 8         # 5x8 font height
 PLANE_FONT = fonts.small
 
-# Clear only the bottom band we own
-# NOTE: Display.draw_square uses DrawLine with inclusive y, so keep Y1 as screen.HEIGHT (exclusive-ish by range(x))
+# Clear only the bottom band we own.
+# Display.draw_square treats x1/y1 as EXCLUSIVE bounds.
+# With PLANE_TEXT_HEIGHT=8 and baseline=31, a safe clear is y=23..31 inclusive.
 PLANE_CLEAR_X0 = 0
-PLANE_CLEAR_Y0 = PLANE_DISTANCE_FROM_TOP - (PLANE_TEXT_HEIGHT - 1)  # 31 - 7 = 24
 PLANE_CLEAR_X1 = screen.WIDTH
-PLANE_CLEAR_Y1 = screen.HEIGHT 
+PLANE_CLEAR_Y0 = PLANE_DISTANCE_FROM_TOP - PLANE_TEXT_HEIGHT   # 31 - 8 = 23
+PLANE_CLEAR_Y1 = screen.HEIGHT                                 # 32 (exclusive)
 
 
 def _unit_label() -> str:
-    # Keep original casing: metric -> "KM"
     return "mi" if str(DISTANCE_UNITS).lower() == "imperial" else "KM"
 
 
@@ -48,23 +48,23 @@ class PlaneDetailsScene(object):
             return None
         return data[idx]
 
+    # NOTE: We prefix these with zzzzz_ so they run late in keyframe order
+    # (prevents other flight scenes from overpainting the bottom band after us).
+
     @Animator.KeyFrame.add(0, tag="flight")
-    def reset_plane_details(self):
-        # Called on reset_scene() (mode switch / clear_screen)
+    def zzzzz_reset_plane_details(self):
         self.plane_position = screen.WIDTH
         self._clear_band()
 
     @Animator.KeyFrame.add(1, tag="flight")
-    def plane_details(self, count):
+    def zzzzz_plane_details(self, count):
         plane_data = self._current_flight()
         if not plane_data:
             return
 
-        # Extract data (be defensive)
         plane_name = plane_data.get("plane", "") or ""
         distance = plane_data.get("distance", None)
         direction = plane_data.get("direction", "") or ""
-
         units = _unit_label()
 
         plane_name_text = f"{plane_name} " if plane_name else ""
@@ -77,10 +77,9 @@ class PlaneDetailsScene(object):
         if direction:
             distance_text = f"{distance_text} {direction}"
 
-        # Scrolling widget: redraw every tick
+        # Redraw each tick (scrolling)
         self._clear_band()
 
-        # Draw plane name then distance/direction directly after it
         plane_name_width = self.draw_text(
             PLANE_FONT,
             self.plane_position,
@@ -102,16 +101,12 @@ class PlaneDetailsScene(object):
         # Scroll
         self.plane_position -= 1
 
-        # Advance index when the text fully exits left
+        # Advance index when fully off screen
         if self.plane_position + total_text_width < 0:
             self.plane_position = screen.WIDTH
 
             data = getattr(self, "_data", [])
             if len(data) > 1:
                 self._data_index = (self._data_index + 1) % len(data)
-
-                # Track whether we've looped all flights at least once (matches old behavior)
                 self._data_all_looped = (self._data_index == 0) or self._data_all_looped
-
-            # IMPORTANT: do NOT call reset_scene() here (avoid nuking other widgets)
             return

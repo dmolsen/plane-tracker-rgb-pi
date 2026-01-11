@@ -10,7 +10,7 @@ from rgbmatrix import graphics
 
 # If True, PlaneDetails clears the ENTIRE screen every tick.
 # Use this to prove whether "red/blue blob" is coming from some other scene.
-DEBUG_CLEAR_WHOLE_SCREEN = False
+DEBUG_CLEAR_WHOLE_SCREEN = True
 
 # If True, draw marker lines showing exactly what region is being cleared.
 DEBUG_DRAW_BAND_MARKERS = True

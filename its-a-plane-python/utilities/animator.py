@@ -25,22 +25,19 @@ class Animator(object):
                     "offset": offset,
                     "count": 0,
                     "run_while_paused": run_while_paused,
-                    "tag": tag,  # <-- NEW
+                    "tag": tag,
                 }
                 return func
             return wrapper
 
     def __init__(self):
-        self.keyframes = []  # list of (name, bound_method)
+        self.keyframes = []
         self.frame = 0
         self._delay = DELAY_DEFAULT
 
         self._paused = False
-        self._pending_reset = True  # do divisor==0 once on first loop and on resume
+        self._pending_reset = True
 
-        # --- NEW: tag gating ---
-        # None = run all tags
-        # set(...) = only run keyframes with tag in set; tag=None always runs
         self.enabled_tags = None
         self._last_enabled_tags_snapshot = None
 
@@ -56,9 +53,23 @@ class Animator(object):
         items.sort(key=lambda x: x[0])
         self.keyframes = items
 
+    def _tag_allowed(self, props) -> bool:
+        """
+        Returns True if this keyframe should run under current enabled_tags.
+        tag=None => always allowed (core).
+        """
+        if self.enabled_tags is None:
+            return True
+        tag = props.get("tag", None)
+        if tag is None:
+            return True
+        return tag in self.enabled_tags
+
     def reset_scene(self):
+        # ✅ FIX: respect tag gating for divisor==0 keyframes too
         for _, keyframe in self.keyframes:
-            if keyframe.properties["divisor"] == 0:
+            props = keyframe.properties
+            if props["divisor"] == 0 and self._tag_allowed(props):
                 keyframe()
 
     def pause(self):
@@ -76,32 +87,15 @@ class Animator(object):
     def paused(self) -> bool:
         return self._paused
 
-    def _tag_allowed(self, props) -> bool:
-        """
-        Returns True if this keyframe should run under current enabled_tags.
-        tag=None => always allowed (core).
-        """
-        if self.enabled_tags is None:
-            return True
-        tag = props.get("tag", None)
-        if tag is None:
-            return True
-        return tag in self.enabled_tags
-
     def reset_on_enable_tags_change(self):
-        """
-        Optional helper:
-        if you change enabled_tags at runtime, call this to force a clean redraw.
-        """
         self._pending_reset = True
 
     def play(self):
         while True:
-            # Detect enabled_tags changes (if you flip them while running)
             snapshot = None if self.enabled_tags is None else tuple(sorted(self.enabled_tags))
             if snapshot != self._last_enabled_tags_snapshot:
                 self._last_enabled_tags_snapshot = snapshot
-                self._pending_reset = True  # force divisor==0 keyframes + count reset
+                self._pending_reset = True
 
             if self._pending_reset:
                 self.reset_scene()
@@ -112,15 +106,12 @@ class Animator(object):
             for _, keyframe in self.keyframes:
                 props = keyframe.properties
 
-                # tag gating
                 if not self._tag_allowed(props):
                     continue
 
-                # pause gating
                 if self._paused and not props.get("run_while_paused", False):
                     continue
 
-                # divisor==0 are only run via reset_scene()
                 if props["divisor"] == 0:
                     continue
 

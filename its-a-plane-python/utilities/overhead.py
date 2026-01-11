@@ -54,6 +54,9 @@ LOG_FILE_FARTHEST = os.path.join(BASE_DIR, "farthest.txt")
 LOG_FILE_RECENT = os.path.join(BASE_DIR, "recent_flights.json")
 LOG_FILE_DEBUG = os.path.join(BASE_DIR, "debug_latest_flight.json")
 
+FIXTURE_FLAG_FILE = os.path.join(BASE_DIR, "force_fixture_mode")
+FIXTURE_DATA_FILE = os.path.join(BASE_DIR, "fixture_flights.json")
+
 # --- Utility Functions ---
 
 def safe_load_json(path: str):
@@ -69,6 +72,13 @@ def safe_write_json(path: str, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
+def fixture_mode_enabled() -> bool:
+    return os.path.exists(FIXTURE_FLAG_FILE)
+
+def load_fixture_flights():
+    data = safe_load_json(FIXTURE_DATA_FILE)
+    # Ensure it's a list of dicts
+    return data if isinstance(data, list) else []
 
 def ordinal(n: int):
     return f"{n}{'tsnrhtdd'[(n//10 % 10 != 1) * (n % 10 < 4) * n % 10::4]}"
@@ -339,6 +349,25 @@ class Overhead:
         with self._lock:
             self._new_data = False
             self._processing = True
+        
+        # --- FIXTURE MODE ---
+        if fixture_mode_enabled():
+            try:
+                data = load_fixture_flights()
+
+                # You can optionally sort and truncate like normal:
+                data = data[:MAX_FLIGHT_LOOKUP]
+
+                with self._lock:
+                    self._new_data = True
+                    self._processing = False
+                    self._data = data
+                return
+            except Exception:
+                with self._lock:
+                    self._new_data = False
+                    self._processing = False
+                return
 
         data = []
 

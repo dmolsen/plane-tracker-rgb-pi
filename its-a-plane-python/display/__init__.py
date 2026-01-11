@@ -123,11 +123,11 @@ class Display(
     # “Flight” widgets:
     #FlightLogoScene,
     #JourneyScene,
-    #FlightDetailsScene,
+    FlightDetailsScene,
     PlaneDetailsScene,
 
     # status widget:
-    LoadingPulseScene,
+    # LoadingPulseScene,
 
     Animator,
 ):

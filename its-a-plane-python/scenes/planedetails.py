@@ -54,6 +54,7 @@ WHITE = graphics.Color(255, 255, 255)
 def _unit_label() -> str:
     return "mi" if str(DISTANCE_UNITS).lower() == "imperial" else "KM"
 
+print(">>> LOADED scenes/planedetails.py <<<", flush=True)
 
 class PlaneDetailsScene(object):
     def __init__(self):
@@ -114,6 +115,9 @@ class PlaneDetailsScene(object):
 
     @Animator.KeyFrame.add(1, tag="flight")
     def zzzzz_plane_details(self, count):
+
+        print(">>> plane_details tick <<<", flush=True)
+        
         f = self._current_flight()
         if not f:
             # Still show something so you know the scene is running.

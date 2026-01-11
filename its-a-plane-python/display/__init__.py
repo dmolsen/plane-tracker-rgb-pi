@@ -127,7 +127,7 @@ class Display(
     PlaneDetailsScene,
 
     # status widget:
-    #LoadingPulseScene,
+    LoadingPulseScene,
 
     Animator,
 ):

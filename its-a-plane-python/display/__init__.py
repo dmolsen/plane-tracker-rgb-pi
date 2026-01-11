@@ -115,19 +115,19 @@ def desired_brightness():
 
 class Display(
     # “Home” widgets:
-    TemperatureScene,
-    ClockScene,
-    DateScene,
-    DaysForecastScene,
+    #TemperatureScene,
+    #ClockScene,
+    #DateScene,
+    #DaysForecastScene,
 
     # “Flight” widgets:
-    FlightLogoScene,
-    JourneyScene,
-    FlightDetailsScene,
+    #FlightLogoScene,
+    #JourneyScene,
+    #FlightDetailsScene,
     PlaneDetailsScene,
 
     # status widget:
-    LoadingPulseScene,
+    #LoadingPulseScene,
 
     Animator,
 ):

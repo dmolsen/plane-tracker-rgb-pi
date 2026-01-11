@@ -108,16 +108,16 @@ class PlaneDetailsScene(object):
     # ------------------------------------------------------------
 
     @Animator.KeyFrame.add(0, tag="flight")
-    def zzzzz_reset_plane_details(self):
+    def zzzzz0_reset_plane_details(self):
         self.plane_position = screen.WIDTH
         self._dbg_tick = 0
         self._clear_band()
 
     @Animator.KeyFrame.add(1, tag="flight")
-    def zzzzz_plane_details(self, count):
+    def zzzzz1_plane_details(self, count):
 
         print(">>> plane_details tick <<<", flush=True)
-        
+
         f = self._current_flight()
         if not f:
             # Still show something so you know the scene is running.

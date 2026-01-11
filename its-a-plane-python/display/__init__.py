@@ -322,12 +322,12 @@ class Display(
             f"flights_active={flights_active} data_len={len(getattr(self,'_data',[]))} data_idx={getattr(self,'_data_index',None)}"
         )
 
-    @Animator.KeyFrame.add(0)
-    def clear_screen(self):
-        self._dbg_clear_count += 1
-        if DEBUG:
-            _dbg(f"CLEAR_SCREEN fired count={self._dbg_clear_count}")
-        self.clear_canvas("clear_screen")
+    #@Animator.KeyFrame.add(0)
+    #def clear_screen(self):
+    #    self._dbg_clear_count += 1
+    #    if DEBUG:
+    #        _dbg(f"CLEAR_SCREEN fired count={self._dbg_clear_count}")
+    #    self.clear_canvas("clear_screen")
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
     def check_for_loaded_data(self, count):

@@ -287,9 +287,9 @@ class Display(
     # Data polling
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True)
-        def aaaa_begin_frame(self, count):
-            # This must be reset every frame, otherwise scenes treat every tick like a full redraw.
-            self._redraw_all_this_frame = False
+    def aaaa_begin_frame(self, count):
+        # This must be reset every frame, otherwise scenes treat every tick like a full redraw.
+        self._redraw_all_this_frame = False
 
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)

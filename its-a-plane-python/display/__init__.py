@@ -339,6 +339,8 @@ class Display(
 
         flights_active = len(getattr(self, "_data", [])) > 0
         new_mode = "flight" if flights_active else "default"
+        if DEBUG and (self.frame % 10 == 0):
+            _dbg(f"MODE_CHECK frame={self.frame} flights_active={flights_active} len(_data)={len(self._data)} mode={self._mode} new_mode={new_mode}")
         if new_mode != self._mode:
             self._mode = new_mode
             self.enabled_tags = {"flight"} if new_mode == "flight" else {"default"}

@@ -222,6 +222,8 @@ class Display(
 
     def draw_square(self, x0, y0, x1, y1, colour):
         self._dirty = True
+        # DO NOT set _redraw_all_this_frame here.
+
         y_end = y1 - 1
         if y_end < y0:
             return
@@ -230,22 +232,23 @@ class Display(
 
     def draw_text(self, font, x, y, colour, text) -> int:
         self._dirty = True
+        # DO NOT set _redraw_all_this_frame here.
         return graphics.DrawText(self.canvas, font, x, y, colour, text)
 
     def set_pixel(self, x, y, r, g, b):
         self._dirty = True
+        # DO NOT set _redraw_all_this_frame here.
         self.canvas.SetPixel(x, y, int(r), int(g), int(b))
 
     def set_image(self, pil_img, x=0, y=0):
         if pil_img is None:
             return
         self._dirty = True
+        # DO NOT set _redraw_all_this_frame here.
+
         if self._canvas_has_setimage:
             self.canvas.SetImage(pil_img, x, y)
             return
-
-        if DEBUG_LOG_IMAGE_DRAW:
-            _dbg("WARN canvas has no SetImage; using slow pixel blit fallback")
 
         img = pil_img.convert("RGB")
         w, h = img.size
@@ -283,6 +286,12 @@ class Display(
     # -----------------------------
     # Data polling
     # -----------------------------
+    @Animator.KeyFrame.add(1, run_while_paused=True)
+        def aaaa_begin_frame(self, count):
+            # This must be reset every frame, otherwise scenes treat every tick like a full redraw.
+            self._redraw_all_this_frame = False
+
+
     @Animator.KeyFrame.add(frames.PER_SECOND * 5)
     def check_for_loaded_data(self, count):
         if self.overhead.new_data:
@@ -298,6 +307,9 @@ class Display(
                 )
 
             if data_is_different:
+                # Force crawler positions to restart on data change
+                self.reset_scene()
+                self.clear_canvas("data_change")
                 self._data_index = 0
                 self._data_all_looped = False
                 self._data = new_data

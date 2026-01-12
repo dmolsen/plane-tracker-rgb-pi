@@ -91,4 +91,5 @@ class PlaneDetailsScene(object):
             if len(data) > 1:
                 self._data_index = (self._data_index + 1) % len(data)
                 self._data_all_looped = (self._data_index == 0) or self._data_all_looped
+                self._pending_reset = True
             return

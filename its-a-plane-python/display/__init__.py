@@ -307,12 +307,15 @@ class Display(
                 )
 
             if data_is_different:
-                # Force crawler positions to restart on data change
-                self.reset_scene()
-                self.clear_canvas("data_change")
+                self._data = new_data
                 self._data_index = 0
                 self._data_all_looped = False
-                self._data = new_data
+
+                self._dbg_reset_count += 1
+                _dbg(f"RESET_SCENE triggered resets={self._dbg_reset_count}")
+
+                self.clear_canvas("data_change")
+                self.reset_scene()
 
             reset_required = there_is_data and data_is_different
             if reset_required:

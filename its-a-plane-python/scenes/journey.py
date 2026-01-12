@@ -56,7 +56,7 @@ DIST_CLEAR = (
     DISTANCE_POSITION[0],
     DISTANCE_POSITION[1] - 6,     # 8
     DISTANCE_POSITION[0] + DISTANCE_WIDTH,
-    16,     # 15 (exclusive) -> clears up to row 14
+    15,     # 15 (exclusive) -> clears up to row 14
 )
 
 ARROW_CLEAR = (

@@ -58,7 +58,7 @@ class ClockScene(object):
             colours.BLACK,
         )
 
-    @Animator.KeyFrame.add(0, tag="default")
+    @Animator.KeyFrame.add(0, tag="clock")
     def reset_clock(self):
         """
         Called via Display.reset_scene() (divisor==0) when:
@@ -72,7 +72,7 @@ class ClockScene(object):
         self._last_clear_token_seen = getattr(self, "_clear_token", None)
         self._clear_clock_area()
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="clock")
     def clock(self, count):
         # If Display performed a full canvas clear since we last drew, force redraw.
         clear_token = getattr(self, "_clear_token", None)
@@ -112,7 +112,7 @@ class ClockScene(object):
         self._last_colour_is_night = is_night
         self._redraw_time = False
 
-    @Animator.KeyFrame.add(1, run_while_paused=True)
+    @Animator.KeyFrame.add(1, run_while_paused=True, tag="clock")
     def aaaa_begin_frame(self, count):
         # reset each frame (used by scenes that check _redraw_all_this_frame)
         self._redraw_all_this_frame = False

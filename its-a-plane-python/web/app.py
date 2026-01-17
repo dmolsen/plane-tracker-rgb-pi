@@ -2,6 +2,8 @@
 from flask import Flask, render_template, jsonify, send_from_directory
 import json
 import os
+import subprocess
+import re
 
 # /web is the folder that this file lives in
 WEB_DIR = os.path.dirname(__file__)
@@ -24,6 +26,7 @@ FARTHEST_FILE = os.path.join(BASE_DIR, "farthest.txt")
 RECENT_FILE = os.path.join(BASE_DIR, "recent_flights.json")
 
 SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
+SETUP_STATE_FILE = os.path.join(BASE_DIR, "setup_state.json")
 
 def read_screen_state():
     try:
@@ -36,6 +39,16 @@ def write_screen_state(state):
     with open(SCREEN_STATE_FILE, "w") as f:
         json.dump({"screen": state}, f)
 
+def read_setup_state():
+    try:
+        with open(SETUP_STATE_FILE, "r") as f:
+            return json.load(f).get("setup_complete", False)
+    except Exception:
+        return False
+
+def write_setup_state(value: bool):
+    with open(SETUP_STATE_FILE, "w") as f:
+        json.dump({"setup_complete": bool(value)}, f)
 
 def load_json(path, default):
     try:
@@ -44,6 +57,49 @@ def load_json(path, default):
     except Exception as e:
         print(f"Could not load {path}: {e}")
         return default
+
+# network checking
+def _run(cmd):
+    return subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True).strip()
+
+def get_wlan_ip():
+    try:
+        out = _run(["ip", "-4", "addr", "show", "wlan0"])
+        for line in out.splitlines():
+            if "inet " in line:
+                return line.split()[1].split("/")[0]
+    except Exception:
+        return None
+    return None
+
+def get_default_gateway():
+    try:
+        out = _run(["ip", "route", "show", "default"])
+        # default via 192.168.1.1 dev wlan0 ...
+        m = re.search(r"default via (\S+)", out)
+        return m.group(1) if m else None
+    except Exception:
+        return None
+
+def get_wifi_ssid():
+    try:
+        out = _run(["iw", "dev", "wlan0", "link"])
+        # Look for "SSID: <name>"
+        for line in out.splitlines():
+            if line.strip().startswith("SSID:"):
+                return line.split("SSID:", 1)[1].strip()
+        if "Not connected." in out:
+            return None
+    except Exception:
+        return None
+    return None
+
+def dns_ok(domain="api.flightradar24.com"):
+    try:
+        _run(["getent", "hosts", domain])
+        return True
+    except Exception:
+        return False
 
 
 @app.get("/")
@@ -139,6 +195,28 @@ def screen_toggle():
 def maps(filename):
     maps_dir = os.path.join(WEB_DIR, "static/maps")
     return send_from_directory(maps_dir, filename)
+
+
+@app.get("/api/network")
+def api_network():
+    hostname = os.uname().nodename
+    ssid = get_wifi_ssid()
+    ip = get_wlan_ip()
+    gw = get_default_gateway()
+    dns = dns_ok()
+
+    return jsonify({
+        "hostname": hostname,
+        "mdns": f"{hostname}.local",
+        "ssid": ssid,
+        "ip": ip,
+        "gateway": gw,
+        "dns_ok": dns,
+        "wifi_connected": ssid is not None,
+        "has_ip": ip is not None,
+        "has_gateway": gw is not None,
+    })
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)

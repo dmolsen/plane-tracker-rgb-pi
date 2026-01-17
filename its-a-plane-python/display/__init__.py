@@ -180,7 +180,7 @@ class Display(
         super().__init__()
 
         self._mode = None
-        self.enabled_tags = {"default", "flight"}
+        self.enabled_tags = {"clock"}
 
         print("DEBUG pending_reset:", getattr(self, "_pending_reset", None), flush=True)
         self.delay = frames.PERIOD
@@ -286,13 +286,13 @@ class Display(
     # -----------------------------
     # Data polling
     # -----------------------------
-    @Animator.KeyFrame.add(1, run_while_paused=True)
+    @Animator.KeyFrame.add(1, run_while_paused=True, order=0)
     def aaaa_begin_frame(self, count):
         # This must be reset every frame, otherwise scenes treat every tick like a full redraw.
         self._redraw_all_this_frame = False
 
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 5)
+    @Animator.KeyFrame.add(frames.PER_SECOND * 5, order=0)
     def check_for_loaded_data(self, count):
         if self.overhead.new_data:
             there_is_data = len(self._data) > 0 or not self.overhead.data_is_empty
@@ -314,7 +314,6 @@ class Display(
                 self._dbg_reset_count += 1
                 _dbg(f"RESET_SCENE triggered resets={self._dbg_reset_count}")
 
-                self.clear_canvas("data_change")
                 self.reset_scene()
 
             reset_required = there_is_data and data_is_different
@@ -334,7 +333,7 @@ class Display(
     # -----------------------------
     # POLICY: tag gating + brightness + pause
     # -----------------------------
-    @Animator.KeyFrame.add(1, run_while_paused=True)
+    @Animator.KeyFrame.add(1, run_while_paused=True, order=0)
     def zzzzzy_policy(self, count):
         screen_state = read_screen_state()
         target_brightness = desired_brightness()
@@ -346,13 +345,14 @@ class Display(
             _dbg(f"MODE_CHECK frame={self.frame} flights_active={flights_active} len(_data)={len(self._data)} mode={self._mode} new_mode={new_mode}")
         if new_mode != self._mode:
             self._mode = new_mode
-            self.enabled_tags = {"flight"} if new_mode == "flight" else {"default"}
+            self.enabled_tags = {"clock"}
 
             _dbg(f"MODE_SWITCH -> {self._mode} (enabled_tags={self.enabled_tags})")
 
             # Force a clean redraw
             self.reset_scene()
             self.clear_canvas(f"mode_switch->{self._mode}")
+            self._data_index = 0
 
         if DEBUG and (self.frame % DEBUG_EVERY_N_FRAMES == 0):
             _dbg(
@@ -394,7 +394,7 @@ class Display(
     # -----------------------------
     # PRESENT: the only SwapOnVSync
     # -----------------------------
-    @Animator.KeyFrame.add(1, run_while_paused=True)
+    @Animator.KeyFrame.add(1, run_while_paused=True, order=2)
     def zzzzzz_present(self, count):
         if self._effective_off:
             self.canvas = self.matrix.SwapOnVSync(self.canvas)

@@ -18,7 +18,7 @@ class Animator(object):
 
     class KeyFrame(object):
         @staticmethod
-        def add(divisor, offset=0, run_while_paused=False, tag=None):
+        def add(divisor, offset=0, run_while_paused=False, tag=None, order=1):
             def wrapper(func):
                 func.properties = {
                     "divisor": divisor,
@@ -26,6 +26,7 @@ class Animator(object):
                     "count": 0,
                     "run_while_paused": run_while_paused,
                     "tag": tag,
+                    "order": order,
                 }
                 return func
             return wrapper
@@ -50,7 +51,7 @@ class Animator(object):
             method = getattr(self, methodname)
             if hasattr(method, "properties"):
                 items.append((methodname, method))
-        items.sort(key=lambda x: x[0])
+        items.sort(key=lambda x: (x[1].properties.get("order", 1), x[0]))
         self.keyframes = items
 
     def _tag_allowed(self, props) -> bool:

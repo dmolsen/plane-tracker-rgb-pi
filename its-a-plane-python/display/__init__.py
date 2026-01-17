@@ -392,6 +392,13 @@ class Display(
             _trace(f"SWAP_SKIP frame={self.frame} dirty=False")
             return
 
+        # If we need a full redraw after swaps, avoid swapping a partial frame.
+        if self._requires_post_swap_redraw and not self._did_forced_redraw_this_frame:
+            self._force_redraw_next_frame = True
+            self._dirty = False
+            _trace(f"SWAP_DELAY frame={self.frame} reason=post_swap_redraw")
+            return
+
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
         self._dirty = False
 

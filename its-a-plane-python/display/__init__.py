@@ -187,6 +187,7 @@ class Display(
         self.enabled_tags = {"clock", "date", "temperature"}
         self._requires_post_swap_redraw = True
         self._update_post_swap_requirement()
+        self._trace = _trace
 
         self.delay = frames.PERIOD
 
@@ -336,7 +337,10 @@ class Display(
                 self.enabled_tags = {"clock", "date", "temperature"}
             self._update_post_swap_requirement()
 
-            _trace(f"MODE_SWITCH frame={self.frame} mode={self._mode} tags={self.enabled_tags}")
+            _trace(
+                f"MODE_SWITCH frame={self.frame} mode={self._mode} tags={self.enabled_tags} "
+                f"post_swap_redraw={self._requires_post_swap_redraw}"
+            )
 
             # Force a clean redraw
             self.reset_scene()

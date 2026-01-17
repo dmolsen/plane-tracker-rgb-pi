@@ -82,6 +82,12 @@ class PlaneDetailsScene(object):
         )
         total = w1 + w2
 
+        if hasattr(self, "_trace"):
+            self._trace(
+                f"PLANE_DETAILS draw frame={getattr(self, 'frame', None)} "
+                f"pos={self.plane_position} total={total}"
+            )
+
         self.plane_position -= 1
 
         # When PlaneDetails wraps, it advances _data_index (single “source of truth”)

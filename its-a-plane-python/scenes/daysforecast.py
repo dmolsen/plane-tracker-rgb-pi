@@ -99,7 +99,7 @@ class DaysForecastScene(object):
             self._icon_cache[icon_name] = None
             return None
 
-    @Animator.KeyFrame.add(0, tag="default")
+    @Animator.KeyFrame.add(0, tag="days_forecast")
     def reset_forecast(self):
         # Called on reset_scene() (mode switch etc)
         self._redraw_forecast = True
@@ -107,7 +107,7 @@ class DaysForecastScene(object):
         self._last_clear_token_seen = getattr(self, "_clear_token", None)
         self._clear_forecast_region()
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="days_forecast")
     def day(self, count):
         # If Display performed a full canvas clear since we last drew, force redraw.
         self._sync_with_canvas_clear()

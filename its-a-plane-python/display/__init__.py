@@ -169,7 +169,7 @@ class Display(
         super().__init__()
 
         self._mode = None
-        self.enabled_tags = {"clock", "date", "temperature"}
+        self.enabled_tags = {"clock", "date", "temperature", "days_forecast"}
         self._requires_post_swap_redraw = True
         self._update_post_swap_requirement()
 
@@ -314,7 +314,7 @@ class Display(
                     "flight_details",
                 }
             else:
-                self.enabled_tags = {"clock", "date", "temperature"}
+                self.enabled_tags = {"clock", "date", "temperature", "days_forecast"}
             self._update_post_swap_requirement()
 
 

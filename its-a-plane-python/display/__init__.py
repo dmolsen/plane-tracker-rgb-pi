@@ -174,7 +174,7 @@ class Display(
         super().__init__()
 
         self._mode = None
-        self.enabled_tags = {"clock", "date"}
+        self.enabled_tags = {"clock", "date", "temperature"}
 
         self.delay = frames.PERIOD
 
@@ -296,7 +296,7 @@ class Display(
         new_mode = "flight" if flights_active else "default"
         if new_mode != self._mode:
             self._mode = new_mode
-            self.enabled_tags = {"clock", "date"}
+            self.enabled_tags = {"clock", "date", "temperature"}
 
             _trace(f"MODE_SWITCH frame={self.frame} mode={self._mode} tags={self.enabled_tags}")
 

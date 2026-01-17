@@ -70,7 +70,7 @@ class TemperatureScene(object):
             self._needs_redraw = True
             self._last_drawn_str = None
 
-    @Animator.KeyFrame.add(0, tag="default")
+    @Animator.KeyFrame.add(0, tag="temperature")
     def reset_temperature(self):
         """
         Called via Display.reset_scene() (divisor==0).
@@ -81,7 +81,7 @@ class TemperatureScene(object):
         self._last_clear_token_seen = getattr(self, "_clear_token", None)
         self._clear_temp_area()
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="temperature")
     def temperature(self, count):
         # Detect full-canvas clears and force redraw
         self._sync_with_canvas_clear()

@@ -113,8 +113,3 @@ class ClockScene(object):
         self._last_time_str = current_time_str
         self._last_colour_is_night = is_night
         self._redraw_time = False
-
-    @Animator.KeyFrame.add(1, run_while_paused=True, tag="clock")
-    def aaaa_begin_frame(self, count):
-        # reset each frame (used by scenes that check _redraw_all_this_frame)
-        self._redraw_all_this_frame = False

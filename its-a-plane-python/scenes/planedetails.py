@@ -19,7 +19,12 @@ PLANE_CLEAR_Y1 = PLANE_DISTANCE_FROM_TOP + 1                        # 32 (exclus
 BLACK = graphics.Color(0, 0, 0)
 
 def _unit_label() -> str:
-    return "mi" if str(DISTANCE_UNITS).lower() == "imperial" else "KM"
+    return "MI" if str(DISTANCE_UNITS).lower() == "imperial" else "KM"
+
+
+def _sanitize_text(value: str) -> str:
+    allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .:/-"
+    return "".join(ch for ch in value.upper() if ch in allowed)
 
 
 class PlaneDetailsScene(object):
@@ -64,6 +69,9 @@ class PlaneDetailsScene(object):
         if direction:
             distance_text = f"{distance_text} {direction}"
 
+        plane_name_text = _sanitize_text(plane_name_text)
+        distance_text = _sanitize_text(distance_text)
+
         if hasattr(self, "_trace"):
             self._trace(
                 f"PLANE_DETAILS text frame={getattr(self, 'frame', None)} "
@@ -72,21 +80,14 @@ class PlaneDetailsScene(object):
 
         self._clear_band()
 
-        w1 = self.draw_text(
+        test_text = "HELLO WORLD"
+        total = self.draw_text(
             PLANE_FONT,
             self.plane_position,
             PLANE_DISTANCE_FROM_TOP,
             PLANE_COLOUR,
-            plane_name_text,
+            test_text,
         )
-        w2 = self.draw_text(
-            PLANE_FONT,
-            self.plane_position + w1,
-            PLANE_DISTANCE_FROM_TOP,
-            PLANE_DISTANCE_COLOUR,
-            distance_text,
-        )
-        total = w1 + w2
 
         if hasattr(self, "_trace"):
             self._trace(

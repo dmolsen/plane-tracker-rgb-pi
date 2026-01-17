@@ -334,7 +334,7 @@ class Display(
         if new_mode != self._mode:
             self._mode = new_mode
             if self._mode == "flight":
-                self.enabled_tags = {"flight_bg", "journey", "plane_details", "flight_details"}
+                self.enabled_tags = {"flight_bg", "journey", "flight_details"}
             else:
                 self.enabled_tags = {"clock", "date", "temperature"}
             self._update_post_swap_requirement()

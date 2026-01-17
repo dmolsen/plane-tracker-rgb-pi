@@ -168,6 +168,7 @@ class Display(
         # IMPORTANT: This should mean "a full-canvas clear happened this frame"
         self._redraw_all_this_frame = True
         self._force_redraw_next_frame = False
+        self._did_forced_redraw_this_frame = False
 
         # Init animator + scenes
         super().__init__()
@@ -252,9 +253,11 @@ class Display(
         # Restore any pending full redraw after a swap, then clear the flag.
         self._redraw_all_this_frame = self._force_redraw_next_frame
         self._force_redraw_next_frame = False
+        self._did_forced_redraw_this_frame = False
         if self._redraw_all_this_frame:
             _trace(f"FRAME begin frame={self.frame} redraw_all=True")
             self._force_run_keyframes = True
+            self._did_forced_redraw_this_frame = True
 
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5, order=0)
@@ -338,7 +341,8 @@ class Display(
         if self._effective_off:
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
             self._dirty = False
-            self._force_redraw_next_frame = True
+            if not self._did_forced_redraw_this_frame:
+                self._force_redraw_next_frame = True
             _trace(f"SWAP frame={self.frame} off=True dirty=False")
             return
 
@@ -350,7 +354,8 @@ class Display(
         self._dirty = False
 
         # Force a full redraw on the next frame after a swap.
-        self._force_redraw_next_frame = True
+        if not self._did_forced_redraw_this_frame:
+            self._force_redraw_next_frame = True
         _trace(f"SWAP frame={self.frame} off=False dirty=True")
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)

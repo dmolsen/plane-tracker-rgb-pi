@@ -185,6 +185,8 @@ class Display(
 
         self._mode = None
         self.enabled_tags = {"clock", "date", "temperature"}
+        self._requires_post_swap_redraw = True
+        self._update_post_swap_requirement()
 
         self.delay = frames.PERIOD
 
@@ -194,6 +196,21 @@ class Display(
     # -----------------------------
     # Draw helpers (dirty only)
     # -----------------------------
+    def _update_post_swap_requirement(self):
+        enabled = self.enabled_tags
+        requires = False
+        for _, keyframe in getattr(self, "keyframes", []):
+            props = keyframe.properties
+            tag = props.get("tag", None)
+            if tag is None:
+                continue
+            if enabled is not None and tag not in enabled:
+                continue
+            if props.get("divisor", 0) > 1:
+                requires = True
+                break
+        self._requires_post_swap_redraw = requires
+
     def mark_dirty(self):
         if not self._dirty:
             _trace(f"DIRTY set frame={self.frame}")
@@ -317,6 +334,7 @@ class Display(
                 self.enabled_tags = {"journey", "plane_details"}
             else:
                 self.enabled_tags = {"clock", "date", "temperature"}
+            self._update_post_swap_requirement()
 
             _trace(f"MODE_SWITCH frame={self.frame} mode={self._mode} tags={self.enabled_tags}")
 
@@ -361,7 +379,7 @@ class Display(
         if self._effective_off:
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
             self._dirty = False
-            if not self._did_forced_redraw_this_frame:
+            if self._requires_post_swap_redraw and not self._did_forced_redraw_this_frame:
                 self._force_redraw_next_frame = True
             _trace(f"SWAP frame={self.frame} off=True dirty=False")
             return
@@ -374,7 +392,7 @@ class Display(
         self._dirty = False
 
         # Force a full redraw on the next frame after a swap.
-        if not self._did_forced_redraw_this_frame:
+        if self._requires_post_swap_redraw and not self._did_forced_redraw_this_frame:
             self._force_redraw_next_frame = True
         _trace(f"SWAP frame={self.frame} off=False dirty=True")
 

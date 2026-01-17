@@ -90,9 +90,11 @@ class ClockScene(object):
         # - minute changed
         # - forced (reset, mode entry, etc)
         # - colour regime changed (day<->night boundary)
+        force = bool(getattr(self, "_redraw_all_this_frame", False))
         if (
             (current_time_str == self._last_time_str)
             and (not self._redraw_time)
+            and (not force)
             and (is_night == self._last_colour_is_night)
         ):
             return

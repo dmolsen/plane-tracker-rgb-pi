@@ -175,6 +175,7 @@ class Display(
 
         # IMPORTANT: This should mean "a full-canvas clear happened this frame"
         self._redraw_all_this_frame = True
+        self._force_redraw_next_frame = False
 
         # Init animator + scenes
         super().__init__()
@@ -288,8 +289,9 @@ class Display(
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True, order=0)
     def aaaa_begin_frame(self, count):
-        # This must be reset every frame, otherwise scenes treat every tick like a full redraw.
-        self._redraw_all_this_frame = False
+        # Restore any pending full redraw after a swap, then clear the flag.
+        self._redraw_all_this_frame = self._force_redraw_next_frame
+        self._force_redraw_next_frame = False
 
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5, order=0)
@@ -400,7 +402,7 @@ class Display(
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
             self._dbg_swap_count += 1
             self._dirty = False
-            self._redraw_all_this_frame = False
+            self._force_redraw_next_frame = True
             return
 
         if not self._dirty:
@@ -410,8 +412,8 @@ class Display(
         self._dbg_swap_count += 1
         self._dirty = False
 
-        # IMPORTANT: this is a one-frame signal
-        self._redraw_all_this_frame = False
+        # Force a full redraw on the next frame after a swap.
+        self._force_redraw_next_frame = True
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):

@@ -254,6 +254,7 @@ class Display(
         self._force_redraw_next_frame = False
         if self._redraw_all_this_frame:
             _trace(f"FRAME begin frame={self.frame} redraw_all=True")
+            self._force_run_keyframes = True
 
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5, order=0)

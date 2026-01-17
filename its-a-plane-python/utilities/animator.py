@@ -118,14 +118,19 @@ class Animator(object):
 
                 d = props["divisor"]
                 o = props["offset"]
+                force_run = bool(getattr(self, "_force_run_keyframes", False))
 
-                if d and ((self.frame - o) % d == 0):
+                should_run = d and ((self.frame - o) % d == 0)
+                if should_run or force_run:
                     if keyframe(props["count"]):
                         props["count"] = 0
                     else:
-                        props["count"] += 1
+                        if should_run:
+                            props["count"] += 1
 
             self.frame += 1
+            if getattr(self, "_force_run_keyframes", False):
+                self._force_run_keyframes = False
             sleep(self._delay)
 
     @property

@@ -65,12 +65,6 @@ class PlaneDetailsScene(object):
             distance_text = f"{distance_text} {direction}"
 
 
-        if hasattr(self, "_trace"):
-            self._trace(
-                f"PLANE_DETAILS text frame={getattr(self, 'frame', None)} "
-                f"plane={plane_name_text!r} distance={distance_text!r}"
-            )
-
         self._clear_band()
 
         w1 = self.draw_text(
@@ -88,12 +82,6 @@ class PlaneDetailsScene(object):
             distance_text,
         )
         total = w1 + w2
-
-        if hasattr(self, "_trace"):
-            self._trace(
-                f"PLANE_DETAILS draw frame={getattr(self, 'frame', None)} "
-                f"pos={self.plane_position} total={total}"
-            )
 
         self.plane_position -= 1
 

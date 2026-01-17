@@ -65,12 +65,6 @@ class FlightDetailsScene(object):
                 flight_no = f"{airline} {flight_no}"
 
         data = getattr(self, "_data", [])
-        if hasattr(self, "_trace"):
-            self._trace(
-                f"FLIGHT_DETAILS frame={getattr(self, 'frame', None)} "
-                f"callsign={callsign!r} owner_icao={owner_icao!r} airline={airline!r} "
-                f"flight_no={flight_no!r} data_len={len(data)}"
-            )
         if not flight_no and len(data) <= 1:
             return
 

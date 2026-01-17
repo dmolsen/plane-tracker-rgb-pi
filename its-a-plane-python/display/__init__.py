@@ -22,17 +22,6 @@ from rgbmatrix import graphics
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 
-# -----------------------------
-# Minimal trace for redraw/swap debugging
-# -----------------------------
-TRACE = True
-
-
-def _trace(msg: str, flush: bool = True):
-    if not TRACE:
-        return
-    ts = datetime.now().isoformat(timespec="seconds")
-    print(f"{ts} PID={os.getpid()} {msg}", flush=flush)
 
 
 # -----------------------------
@@ -151,12 +140,6 @@ class Display(
         options.disable_hardware_pulsing = True
         options.drop_privileges = False
 
-        _trace(
-            f"BOOT rgbmatrix mapping={options.hardware_mapping!r} rows={options.rows} cols={options.cols} "
-            f"gpio_slowdown={options.gpio_slowdown} brightness={options.brightness} "
-            f"drop_privileges={options.drop_privileges}"
-        )
-
         self.matrix = RGBMatrix(options=options)
 
         self.canvas = self.matrix.CreateFrameCanvas()
@@ -189,12 +172,10 @@ class Display(
         self.enabled_tags = {"clock", "date", "temperature"}
         self._requires_post_swap_redraw = True
         self._update_post_swap_requirement()
-        self._trace = _trace
 
         self.delay = frames.PERIOD
 
         self._canvas_has_setimage = hasattr(self.canvas, "SetImage")
-        _trace(f"CAPS canvas.SetImage={self._canvas_has_setimage}")
 
     # -----------------------------
     # Draw helpers (dirty only)
@@ -215,8 +196,6 @@ class Display(
         self._requires_post_swap_redraw = requires
 
     def mark_dirty(self):
-        if not self._dirty:
-            _trace(f"DIRTY set frame={self.frame}")
         self._dirty = True
 
     def clear_canvas(self, reason: str = ""):
@@ -224,8 +203,6 @@ class Display(
         self._clear_token += 1
         self._dirty = True
         self._redraw_all_this_frame = True
-        if reason:
-            _trace(f"CLEAR_CANVAS frame={self.frame} token={self._clear_token} reason={reason}")
 
     def draw_square(self, x0, y0, x1, y1, colour):
         self._dirty = True
@@ -288,7 +265,6 @@ class Display(
             self.canvas.Clear()
             self._clear_token += 1
             self._dirty = True
-            _trace(f"FRAME begin frame={self.frame} redraw_all=True")
             self._force_run_keyframes = True
             self._did_forced_redraw_this_frame = True
 
@@ -311,10 +287,6 @@ class Display(
             if reset_required:
                 self.reset_scene()
                 self._dirty = True
-
-        flights_active = len(getattr(self, "_data", [])) > 0
-        if flights_active != (self._mode == "flight"):
-            _trace(f"FLIGHT_STATE frame={self.frame} active={flights_active} len={len(self._data)}")
 
     # -----------------------------
     # POLICY: tag gating + brightness + pause
@@ -345,10 +317,6 @@ class Display(
                 self.enabled_tags = {"clock", "date", "temperature"}
             self._update_post_swap_requirement()
 
-            _trace(
-                f"MODE_SWITCH frame={self.frame} mode={self._mode} tags={self.enabled_tags} "
-                f"post_swap_redraw={self._requires_post_swap_redraw}"
-            )
 
             # Force a clean redraw
             self.reset_scene()
@@ -358,7 +326,6 @@ class Display(
         if should_be_off:
             if not self._effective_off:
                 self._effective_off = True
-                _trace(f"POLICY frame={self.frame} entering_off=True")
                 self.pause()
 
             self.clear_canvas("policy_off")
@@ -370,7 +337,6 @@ class Display(
         # ON
         if self._effective_off:
             self._effective_off = False
-            _trace(f"POLICY frame={self.frame} leaving_off=True")
             self.resume()
             self.clear_canvas("policy_on_resume")
 
@@ -393,18 +359,15 @@ class Display(
             self._dirty = False
             if self._requires_post_swap_redraw and not self._did_forced_redraw_this_frame:
                 self._force_redraw_next_frame = True
-            _trace(f"SWAP frame={self.frame} off=True dirty=False")
             return
 
         if not self._dirty:
-            _trace(f"SWAP_SKIP frame={self.frame} dirty=False")
             return
 
         # If we need a full redraw after swaps, avoid swapping a partial frame.
         if self._requires_post_swap_redraw and not self._did_forced_redraw_this_frame:
             self._force_redraw_next_frame = True
             self._dirty = False
-            _trace(f"SWAP_DELAY frame={self.frame} reason=post_swap_redraw")
             return
 
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
@@ -413,7 +376,6 @@ class Display(
         # Force a full redraw on the next frame after a swap.
         if self._requires_post_swap_redraw and not self._did_forced_redraw_this_frame:
             self._force_redraw_next_frame = True
-        _trace(f"SWAP frame={self.frame} off=False dirty=True")
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):
@@ -424,8 +386,6 @@ class Display(
 
     def run(self):
         try:
-            _trace("RUN starting Animator.play()")
             self.play()
         except KeyboardInterrupt:
-            _trace("Exiting (KeyboardInterrupt)")
             sys.exit(0)

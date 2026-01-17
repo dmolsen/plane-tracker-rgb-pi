@@ -38,13 +38,13 @@ class FlightDetailsScene(object):
             return None
         return data[idx]
 
-    @Animator.KeyFrame.add(0, tag="flight")
-    def zzzzz0_reset_flight_details(self):
+    @Animator.KeyFrame.add(0, tag="flight_details")
+    def reset_flight_details(self):
         self.flight_position = screen.WIDTH
         self._clear_band()
 
-    @Animator.KeyFrame.add(1, tag="flight")
-    def zzzzz1_flight_details(self, count):
+    @Animator.KeyFrame.add(1, tag="flight_details")
+    def flight_details(self, count):
         f = self._current_flight()
         if not f:
             return

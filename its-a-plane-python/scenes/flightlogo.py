@@ -107,7 +107,7 @@ class FlightLogoScene(object):
         self._clear_logo_area()
 
     @Animator.KeyFrame.add(1, tag="flight_logo")
-    def logo_details1(self, count):
+    def logo_details(self, count):
         ## Redraw if the display did a full clear this frame
         cleared = self._sync_with_canvas_clear()
 

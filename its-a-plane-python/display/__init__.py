@@ -1,7 +1,6 @@
 import sys
 import os
 import json
-import time
 from datetime import datetime
 
 from setup import frames
@@ -22,24 +21,17 @@ from rgbmatrix import graphics
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 
 
-# =============================
-# DEBUG SETTINGS
-# =============================
-DEBUG = True
-DEBUG_EVERY_N_FRAMES = 30
-DEBUG_SUMMARY_EVERY_SECONDS = 5.0
-DEBUG_SHOW_PANEL_PIXELS = False
-DEBUG_LOG_IMAGE_DRAW = True
+# -----------------------------
+# Minimal trace for redraw/swap debugging
+# -----------------------------
+TRACE = True
 
 
-def _ts() -> str:
-    return datetime.now().isoformat(timespec="seconds")
-
-
-def _dbg(msg: str, flush: bool = True):
-    if not DEBUG:
+def _trace(msg: str, flush: bool = True):
+    if not TRACE:
         return
-    print(f"{_ts()} PID={os.getpid()} {msg}", flush=flush)
+    ts = datetime.now().isoformat(timespec="seconds")
+    print(f"{ts} PID={os.getpid()} {msg}", flush=flush)
 
 
 # -----------------------------
@@ -147,7 +139,7 @@ class Display(
         options.disable_hardware_pulsing = True
         options.drop_privileges = False
 
-        _dbg(
+        _trace(
             f"BOOT rgbmatrix mapping={options.hardware_mapping!r} rows={options.rows} cols={options.cols} "
             f"gpio_slowdown={options.gpio_slowdown} brightness={options.brightness} "
             f"drop_privileges={options.drop_privileges}"
@@ -183,34 +175,17 @@ class Display(
         self._mode = None
         self.enabled_tags = {"clock", "date"}
 
-        print("DEBUG pending_reset:", getattr(self, "_pending_reset", None), flush=True)
         self.delay = frames.PERIOD
 
-        # Debug stats
-        self._dbg_last_summary_t = time.time()
-        self._dbg_swap_count = 0
-        self._dbg_clear_count = 0
-        self._dbg_reset_count = 0
-        self._dbg_last_policy_should_off = None
-        self._dbg_last_flights_active = None
-
-        if DEBUG and hasattr(self, "keyframes"):
-            try:
-                names = [name for name, _ in self.keyframes]
-                _dbg("KEYFRAMES order=" + ", ".join(names))
-                if names and names[-1] != "zzzzzz_present":
-                    _dbg(f"WARNING: present is not last! last={names[-1]}")
-            except Exception as e:
-                _dbg(f"Could not print keyframe order: {e}")
-
         self._canvas_has_setimage = hasattr(self.canvas, "SetImage")
-        if DEBUG_LOG_IMAGE_DRAW:
-            _dbg(f"CAPS canvas.SetImage={self._canvas_has_setimage}")
+        _trace(f"CAPS canvas.SetImage={self._canvas_has_setimage}")
 
     # -----------------------------
     # Draw helpers (dirty only)
     # -----------------------------
     def mark_dirty(self):
+        if not self._dirty:
+            _trace(f"DIRTY set frame={self.frame}")
         self._dirty = True
 
     def clear_canvas(self, reason: str = ""):
@@ -218,8 +193,8 @@ class Display(
         self._clear_token += 1
         self._dirty = True
         self._redraw_all_this_frame = True
-        if DEBUG and reason:
-            _dbg(f"CLEAR_CANVAS token={self._clear_token} reason={reason}")
+        if reason:
+            _trace(f"CLEAR_CANVAS frame={self.frame} token={self._clear_token} reason={reason}")
 
     def draw_square(self, x0, y0, x1, y1, colour):
         self._dirty = True
@@ -270,21 +245,6 @@ class Display(
                 pass
 
     # -----------------------------
-    # Debug summary
-    # -----------------------------
-    def _dbg_summary(self):
-        now = time.time()
-        if now - self._dbg_last_summary_t < DEBUG_SUMMARY_EVERY_SECONDS:
-            return
-        self._dbg_last_summary_t = now
-        flights_active = len(getattr(self, "_data", [])) > 0
-        _dbg(
-            f"SUMMARY swaps={self._dbg_swap_count} clears={self._dbg_clear_count} resets={self._dbg_reset_count} "
-            f"dirty={self._dirty} paused={self.paused} eff_off={self._effective_off} "
-            f"flights_active={flights_active} data_len={len(getattr(self,'_data',[]))} data_idx={getattr(self,'_data_index',None)}"
-        )
-
-    # -----------------------------
     # Data polling
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True, order=0)
@@ -292,6 +252,8 @@ class Display(
         # Restore any pending full redraw after a swap, then clear the flag.
         self._redraw_all_this_frame = self._force_redraw_next_frame
         self._force_redraw_next_frame = False
+        if self._redraw_all_this_frame:
+            _trace(f"FRAME begin frame={self.frame} redraw_all=True")
 
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 5, order=0)
@@ -301,36 +263,21 @@ class Display(
             new_data = self.overhead.data
             data_is_different = not flight_updated(self._data, new_data)
 
-            if DEBUG:
-                _dbg(
-                    f"DATA new_data=True there_is_data={there_is_data} "
-                    f"old_len={len(self._data)} new_len={len(new_data)} different={data_is_different} "
-                    f"processing={getattr(self.overhead,'processing',None)} empty={getattr(self.overhead,'data_is_empty',None)}"
-                )
-
             if data_is_different:
                 self._data = new_data
                 self._data_index = 0
                 self._data_all_looped = False
 
-                self._dbg_reset_count += 1
-                _dbg(f"RESET_SCENE triggered resets={self._dbg_reset_count}")
-
                 self.reset_scene()
 
             reset_required = there_is_data and data_is_different
             if reset_required:
-                self._dbg_reset_count += 1
-                _dbg(f"RESET_SCENE triggered resets={self._dbg_reset_count}")
                 self.reset_scene()
                 self._dirty = True
 
         flights_active = len(getattr(self, "_data", [])) > 0
-        if self._dbg_last_flights_active is None:
-            self._dbg_last_flights_active = flights_active
-        elif flights_active != self._dbg_last_flights_active:
-            self._dbg_last_flights_active = flights_active
-            _dbg(f"FLIGHT_STATE change flights_active={flights_active} len(_data)={len(self._data)}")
+        if flights_active != (self._mode == "flight"):
+            _trace(f"FLIGHT_STATE frame={self.frame} active={flights_active} len={len(self._data)}")
 
     # -----------------------------
     # POLICY: tag gating + brightness + pause
@@ -343,43 +290,33 @@ class Display(
 
         flights_active = len(getattr(self, "_data", [])) > 0
         new_mode = "flight" if flights_active else "default"
-        if DEBUG and (self.frame % 10 == 0):
-            _dbg(f"MODE_CHECK frame={self.frame} flights_active={flights_active} len(_data)={len(self._data)} mode={self._mode} new_mode={new_mode}")
         if new_mode != self._mode:
             self._mode = new_mode
             self.enabled_tags = {"clock", "date"}
 
-            _dbg(f"MODE_SWITCH -> {self._mode} (enabled_tags={self.enabled_tags})")
+            _trace(f"MODE_SWITCH frame={self.frame} mode={self._mode} tags={self.enabled_tags}")
 
             # Force a clean redraw
             self.reset_scene()
             self.clear_canvas(f"mode_switch->{self._mode}")
             self._data_index = 0
 
-        if DEBUG and (self.frame % DEBUG_EVERY_N_FRAMES == 0):
-            _dbg(
-                f"POLICY frame={self.frame} screen={screen_state} night={is_night_time()} "
-                f"target_brightness={target_brightness} should_off={should_be_off} "
-                f"paused={self.paused} eff_off={self._effective_off}"
-            )
-
         if should_be_off:
             if not self._effective_off:
                 self._effective_off = True
-                _dbg("POLICY entering OFF: pause() + brightness=0")
+                _trace(f"POLICY frame={self.frame} entering_off=True")
                 self.pause()
 
             self.clear_canvas("policy_off")
             if getattr(self.matrix, "brightness", 0) != 0:
                 self._set_matrix_brightness(0)
 
-            self._dbg_summary()
             return
 
         # ON
         if self._effective_off:
             self._effective_off = False
-            _dbg("POLICY leaving OFF: resume() + clear backbuffer")
+            _trace(f"POLICY frame={self.frame} leaving_off=True")
             self.resume()
             self.clear_canvas("policy_on_resume")
 
@@ -391,7 +328,6 @@ class Display(
         if getattr(self.matrix, "brightness", target_brightness) != target_brightness:
             self._set_matrix_brightness(target_brightness)
 
-        self._dbg_summary()
 
     # -----------------------------
     # PRESENT: the only SwapOnVSync
@@ -400,34 +336,33 @@ class Display(
     def zzzzzz_present(self, count):
         if self._effective_off:
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
-            self._dbg_swap_count += 1
             self._dirty = False
             self._force_redraw_next_frame = True
+            _trace(f"SWAP frame={self.frame} off=True dirty=False")
             return
 
         if not self._dirty:
+            _trace(f"SWAP_SKIP frame={self.frame} dirty=False")
             return
 
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
-        self._dbg_swap_count += 1
         self._dirty = False
 
         # Force a full redraw on the next frame after a swap.
         self._force_redraw_next_frame = True
+        _trace(f"SWAP frame={self.frame} off=False dirty=True")
 
     @Animator.KeyFrame.add(frames.PER_SECOND * 30)
     def grab_new_data(self, count):
         if not (self.overhead.processing and self.overhead.new_data) and (
             self._data_all_looped or len(self._data) <= 1
         ):
-            if DEBUG:
-                _dbg("GRAB_NEW_DATA calling overhead.grab_data()")
             self.overhead.grab_data()
 
     def run(self):
         try:
-            _dbg("RUN starting Animator.play()")
+            _trace("RUN starting Animator.play()")
             self.play()
         except KeyboardInterrupt:
-            _dbg("Exiting (KeyboardInterrupt)")
+            _trace("Exiting (KeyboardInterrupt)")
             sys.exit(0)

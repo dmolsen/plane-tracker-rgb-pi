@@ -49,10 +49,7 @@ class FlightDetailsScene(object):
         if not f:
             return
 
-        # Debug: bright band + marker pixels to confirm this region is visible.
-        self.draw_square(BAND_X0, BAND_Y0, BAND_X1, BAND_Y1, colours.RED)
-        self.set_pixel(0, BAND_Y0, 0, 255, 0)
-        self.set_pixel(0, BAND_Y1 - 1, 0, 255, 0)
+        self._clear_band()
 
         callsign = f.get("callsign") or ""
         owner_icao = f.get("owner_icao") or ""
@@ -79,14 +76,15 @@ class FlightDetailsScene(object):
 
         total_len = 0
 
-        test_text = "HELLO"
-        total_len = self.draw_text(
-            FLIGHT_NO_FONT,
-            self.flight_position,
-            FLIGHT_NO_DISTANCE_FROM_TOP,
-            FLIGHT_NUMBER_ALPHA_COLOUR,
-            test_text,
-        )
+        if flight_no:
+            for ch in flight_no:
+                total_len += self.draw_text(
+                    FLIGHT_NO_FONT,
+                    self.flight_position + total_len,
+                    FLIGHT_NO_DISTANCE_FROM_TOP,
+                    FLIGHT_NUMBER_NUMERIC_COLOUR if ch.isnumeric() else FLIGHT_NUMBER_ALPHA_COLOUR,
+                    ch,
+                )
 
         # Pager is OK to show, but DO NOT use it to extend total_len unless you want it to affect wrap timing
         if len(data) > 1:
@@ -99,12 +97,6 @@ class FlightDetailsScene(object):
             )
 
         self.flight_position -= 1
-
-        if hasattr(self, "_trace"):
-            self._trace(
-                f"FLIGHT_DETAILS pos frame={getattr(self, 'frame', None)} "
-                f"pos={self.flight_position} total_len={total_len}"
-            )
 
         # Wrap without advancing _data_index (PlaneDetails will drive index)
         if self.flight_position + max(total_len, 1) < 0:

@@ -51,6 +51,16 @@ def read_screen_state():
         return "on"
 
 
+def read_mode_override():
+    """Returns 'auto', 'default', or 'flight'. Defaults to 'auto' on error."""
+    try:
+        with open(SCREEN_STATE_FILE, "r", encoding="utf-8") as f:
+            v = json.load(f).get("mode", "auto")
+            return v if v in ("auto", "default", "flight") else "auto"
+    except Exception:
+        return "auto"
+
+
 def flight_updated(flights_a, flights_b):
     get_callsigns = lambda flights: [(f.get("callsign"), f.get("direction")) for f in flights]
     return set(get_callsigns(flights_a)) == set(get_callsigns(flights_b))
@@ -293,10 +303,17 @@ class Display(
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
 
         flights_active = len(getattr(self, "_data", [])) > 0
-        new_mode = "flight" if flights_active else "default"
+        mode_override = read_mode_override()
+        if mode_override == "auto":
+            new_mode = "flight" if flights_active else "default"
+        else:
+            new_mode = mode_override
         if new_mode != self._mode:
             self._mode = new_mode
-            self.enabled_tags = {"clock", "date", "temperature"}
+            if self._mode == "flight":
+                self.enabled_tags = {"journey"}
+            else:
+                self.enabled_tags = {"clock", "date", "temperature"}
 
             _trace(f"MODE_SWITCH frame={self.frame} mode={self._mode} tags={self.enabled_tags}")
 

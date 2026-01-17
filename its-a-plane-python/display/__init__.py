@@ -9,6 +9,7 @@ from utilities.overhead import Overhead
 
 from scenes.temperature import TemperatureScene
 from scenes.flightdetails import FlightDetailsScene
+from scenes.flightbackground import FlightBackgroundScene
 from scenes.flightlogo import FlightLogoScene
 from scenes.journey import JourneyScene
 from scenes.loadingpulse import LoadingPulseScene
@@ -120,6 +121,7 @@ class Display(
     DaysForecastScene,
 
     # Flight widgets
+    FlightBackgroundScene,
     FlightLogoScene,
     JourneyScene,
     FlightDetailsScene,
@@ -332,7 +334,7 @@ class Display(
         if new_mode != self._mode:
             self._mode = new_mode
             if self._mode == "flight":
-                self.enabled_tags = {"journey", "plane_details"}
+                self.enabled_tags = {"flight_bg", "journey", "plane_details"}
             else:
                 self.enabled_tags = {"clock", "date", "temperature"}
             self._update_post_swap_requirement()

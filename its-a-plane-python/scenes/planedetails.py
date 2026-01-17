@@ -73,10 +73,6 @@ class PlaneDetailsScene(object):
 
         self._clear_band()
 
-        # Debug: marker pixels to confirm this region is visible.
-        self.set_pixel(0, PLANE_CLEAR_Y0, 255, 255, 0)
-        self.set_pixel(0, PLANE_CLEAR_Y1 - 1, 255, 255, 0)
-
         w1 = self.draw_text(
             PLANE_FONT,
             self.plane_position,

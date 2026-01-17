@@ -24,7 +24,7 @@ JOURNEY_SPACING = 5
 JOURNEY_FONT = fonts.regularplus
 JOURNEY_FONT_SELECTED = fonts.regularplus_bold
 
-DISTANCE_POSITION = (17, 15)
+DISTANCE_POSITION = (17, 16)
 DISTANCE_WIDTH = 48
 DISTANCE_FONT = fonts.extrasmall
 
@@ -51,12 +51,12 @@ JOURNEY_CLEAR = (
     JOURNEY_POSITION[1] + JOURNEY_HEIGHT,
 )
 
-# extrasmall baseline is y=15 now; clear a safe band around it
+# extrasmall baseline is y=16 now; clear a safe band around it
 DIST_CLEAR = (
     DISTANCE_POSITION[0],
-    DISTANCE_POSITION[1] - 6,     # 8
+    DISTANCE_POSITION[1] - 5,     # 11
     DISTANCE_POSITION[0] + DISTANCE_WIDTH,
-    15,     # 15 (exclusive) -> clears up to row 14
+    DISTANCE_POSITION[1],     # exclusive -> clears up to row 15
 )
 
 ARROW_CLEAR = (

@@ -111,7 +111,7 @@ class DateScene(object):
     # -----------------------------
     # Keyframes
     # -----------------------------
-    @Animator.KeyFrame.add(0, tag="default")
+    @Animator.KeyFrame.add(0, tag="date")
     def reset_date(self):
         """
         Called via Display.reset_scene() (divisor==0).
@@ -122,7 +122,7 @@ class DateScene(object):
         self._last_clear_token_seen = getattr(self, "_clear_token", None)
         self._clear_date_area()
 
-    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="default")
+    @Animator.KeyFrame.add(frames.PER_SECOND * 1, tag="date")
     def date(self, count):
         # If Display performed a full canvas clear since we last drew, force redraw.
         clear_token = getattr(self, "_clear_token", None)

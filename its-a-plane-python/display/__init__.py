@@ -180,7 +180,7 @@ class Display(
         super().__init__()
 
         self._mode = None
-        self.enabled_tags = {"clock"}
+        self.enabled_tags = {"clock", "date"}
 
         print("DEBUG pending_reset:", getattr(self, "_pending_reset", None), flush=True)
         self.delay = frames.PERIOD
@@ -345,7 +345,7 @@ class Display(
             _dbg(f"MODE_CHECK frame={self.frame} flights_active={flights_active} len(_data)={len(self._data)} mode={self._mode} new_mode={new_mode}")
         if new_mode != self._mode:
             self._mode = new_mode
-            self.enabled_tags = {"clock"}
+            self.enabled_tags = {"clock", "date"}
 
             _dbg(f"MODE_SWITCH -> {self._mode} (enabled_tags={self.enabled_tags})")
 

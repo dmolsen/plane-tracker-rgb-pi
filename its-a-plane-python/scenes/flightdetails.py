@@ -49,8 +49,10 @@ class FlightDetailsScene(object):
         if not f:
             return
 
-        # Debug: bright band to confirm this region is visible.
+        # Debug: bright band + marker pixels to confirm this region is visible.
         self.draw_square(BAND_X0, BAND_Y0, BAND_X1, BAND_Y1, colours.RED)
+        self.set_pixel(0, BAND_Y0, 0, 255, 0)
+        self.set_pixel(0, BAND_Y1 - 1, 0, 255, 0)
 
         callsign = f.get("callsign") or ""
         owner_icao = f.get("owner_icao") or ""

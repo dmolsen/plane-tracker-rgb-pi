@@ -24,7 +24,7 @@ JOURNEY_SPACING = 5
 JOURNEY_FONT = fonts.regularplus
 JOURNEY_FONT_SELECTED = fonts.regularplus_bold
 
-DISTANCE_POSITION = (17, 16)
+DISTANCE_POSITION = (18, 16)
 DISTANCE_WIDTH = 48
 DISTANCE_FONT = fonts.extrasmall
 
@@ -239,8 +239,8 @@ class JourneyScene(object):
         distance_origin_text = f"{dist_origin:.0f}{units}"
         distance_destination_text = f"{dist_destination:.0f}{units}"
 
-        center_x = (16 + 64) // 2
-        half_width = (64 - 16) // 2
+        center_x = DISTANCE_POSITION[0] + (DISTANCE_WIDTH // 2)
+        half_width = DISTANCE_WIDTH // 2
         char_w = 4  # extrasmall approx width
 
         w_o = len(distance_origin_text) * char_w

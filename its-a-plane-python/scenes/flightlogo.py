@@ -99,66 +99,48 @@ class FlightLogoScene(object):
         self._logo_cache[icao] = img
         return img
 
-    @Animator.KeyFrame.add(0, tag="flight")
+    @Animator.KeyFrame.add(0, tag="flight_logo")
     def reset_logo(self):
         # Called on reset_scene() (mode switch / clear_screen)
         self._last_icao_drawn = None
         self._last_clear_token_seen = getattr(self, "_clear_token", None)
         self._clear_logo_area()
 
-    @Animator.KeyFrame.add(1, tag="flight")
-    def logo_details(self, count):
-        # Always redraw (test mode)
-        self._last_icao_drawn = None
+    @Animator.KeyFrame.add(1, tag="flight_logo")
+    def logo_details1(self, count):
+        ## Redraw if the display did a full clear this frame
+        cleared = self._sync_with_canvas_clear()
 
-        # Clear our region
+        f = self._current_flight()
+        if not f:
+            return
+
+        icao = f.get("owner_icao") or DEFAULT_IMAGE
+        if icao in ("", "N/A"):
+            icao = DEFAULT_IMAGE
+        icao = str(icao).strip()
+
+        force = bool(getattr(self, "_redraw_all_this_frame", False))
+
+        ## Only redraw when needed:
+        if (icao == self._last_icao_drawn) and (not force) and (not cleared):
+            return
+
+        ## Clear our region and draw
         self._clear_logo_area()
 
-        # HARD-CODED TEST LOGO
-        img = self._get_logo("ZILLA")
+        img = self._get_logo(icao)
         if img is not None:
-            # Bottom-align inside the 16x16 logo box
+            # Bottom-align inside the 16x16 logo box ("logo should be at the base")
             y = LOGO_SIZE - img.size[1]
             if y < 0:
                 y = 0
 
-            self.set_image(img, 0, y)
+            # (Optional) left align; you can center if you want:
+            x = 0
+            x = max(0, (LOGO_SIZE - img.size[0]) // 2)
 
-    #@Animator.KeyFrame.add(1, tag="flight")
-    #def logo_details1(self, count):
-        ## Redraw if the display did a full clear this frame
-        #cleared = self._sync_with_canvas_clear()
+            # IMPORTANT: draw to backbuffer via Display helper
+            self.set_image(img, x, y)
 
-        #f = self._current_flight()
-        #if not f:
-        #    return
-
-        #icao = f.get("owner_icao") or DEFAULT_IMAGE
-        #if icao in ("", "N/A"):
-        #    icao = DEFAULT_IMAGE
-        #icao = str(icao).strip()
-
-        #force = bool(getattr(self, "_redraw_all_this_frame", False))
-
-        ## Only redraw when needed:
-        #if (icao == self._last_icao_drawn) and (not force) and (not cleared):
-        #    return
-
-        ## Clear our region and draw
-        #self._clear_logo_area()
-
-        #img = self._get_logo(icao)
-        #if img is not None:
-        #    # Bottom-align inside the 16x16 logo box ("logo should be at the base")
-        #    y = LOGO_SIZE - img.size[1]
-        #   if y < 0:
-        #        y = 0
-
-        #    # (Optional) left align; you can center if you want:
-        #    x = 0
-        #    # x = max(0, (LOGO_SIZE - img.size[0]) // 2)
-
-        #    # IMPORTANT: draw to backbuffer via Display helper
-        #    self.set_image(img, x, y)
-
-        #self._last_icao_drawn = icao
+        self._last_icao_drawn = icao

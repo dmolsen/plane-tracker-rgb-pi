@@ -259,12 +259,15 @@ class Display(
     # Data polling
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True, order=0)
-    def aaaa_begin_frame(self, count):
+    def begin_frame(self, count):
         # Restore any pending full redraw after a swap, then clear the flag.
         self._redraw_all_this_frame = self._force_redraw_next_frame
         self._force_redraw_next_frame = False
         self._did_forced_redraw_this_frame = False
         if self._redraw_all_this_frame:
+            self.canvas.Clear()
+            self._clear_token += 1
+            self._dirty = True
             _trace(f"FRAME begin frame={self.frame} redraw_all=True")
             self._force_run_keyframes = True
             self._did_forced_redraw_this_frame = True
@@ -297,7 +300,7 @@ class Display(
     # POLICY: tag gating + brightness + pause
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True, order=0)
-    def zzzzzy_policy(self, count):
+    def policy(self, count):
         screen_state = read_screen_state()
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
@@ -354,7 +357,7 @@ class Display(
     # PRESENT: the only SwapOnVSync
     # -----------------------------
     @Animator.KeyFrame.add(1, run_while_paused=True, order=2)
-    def zzzzzz_present(self, count):
+    def present(self, count):
         if self._effective_off:
             self.canvas = self.matrix.SwapOnVSync(self.canvas)
             self._dirty = False

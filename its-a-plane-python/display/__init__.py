@@ -314,7 +314,7 @@ class Display(
         if new_mode != self._mode:
             self._mode = new_mode
             if self._mode == "flight":
-                self.enabled_tags = {"journey"}
+                self.enabled_tags = {"journey", "plane_details"}
             else:
                 self.enabled_tags = {"clock", "date", "temperature"}
 

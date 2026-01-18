@@ -106,7 +106,8 @@ def main():
         display_path = os.path.join(logo_dir, f"{icao}.png")
 
         if os.path.isfile(web_path):
-            continue
+            print(f"{icao} {iata or '-'}")
+            print(f"  {flightaware} (overwrite)")
 
         content = _fetch_logo(flightaware)
         if not content:

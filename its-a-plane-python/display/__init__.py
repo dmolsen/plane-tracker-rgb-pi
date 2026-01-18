@@ -298,7 +298,7 @@ class Display(
     # -----------------------------
     # POLICY: tag gating + brightness + pause
     # -----------------------------
-    @Animator.KeyFrame.add(frames.PER_SECOND * 30, run_while_paused=True, order=0)
+    @Animator.KeyFrame.add(frames.PER_SECOND * 300, run_while_paused=True, order=0)
     def check_network_status(self, count):
         self._net_status = network_status.current_status()
 

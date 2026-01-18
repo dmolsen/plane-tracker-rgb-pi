@@ -1,5 +1,6 @@
 import os
 import socket
+from urllib.request import Request, urlopen
 import subprocess
 
 
@@ -52,8 +53,9 @@ def _wifi_connected() -> bool:
 
 def _internet_ok() -> bool:
     try:
-        socket.gethostbyname("example.com")
-        return True
+        req = Request("https://www.google.com", method="HEAD")
+        with urlopen(req, timeout=3) as resp:
+            return 200 <= resp.status < 400
     except Exception:
         return False
 

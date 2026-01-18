@@ -50,10 +50,17 @@ class NetworkStatusScene(object):
         # Center text roughly (extrasmall font width ~4).
         text_width = len(msg) * 4
         text_x = max(0, (screen.WIDTH - text_width) // 2)
-        text_y = 20
+        text_y = 16
 
         icon_x = max(0, (screen.WIDTH - 9) // 2)
         icon_y = 6
         self._draw_icon(icon_x, icon_y, colour)
 
         self.draw_text(fonts.extrasmall, text_x, text_y, colour, msg)
+
+        url_line1 = "overhead.local"
+        url_line2 = "/api/network"
+        line1_x = max(0, (screen.WIDTH - (len(url_line1) * 4)) // 2)
+        line2_x = max(0, (screen.WIDTH - (len(url_line2) * 4)) // 2)
+        self.draw_text(fonts.extrasmall, line1_x, 22, colour, url_line1)
+        self.draw_text(fonts.extrasmall, line2_x, 28, colour, url_line2)

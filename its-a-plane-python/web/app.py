@@ -26,7 +26,6 @@ FARTHEST_FILE = os.path.join(BASE_DIR, "farthest.txt")
 RECENT_FILE = os.path.join(BASE_DIR, "recent_flights.json")
 
 SCREEN_STATE_FILE = os.path.join(BASE_DIR, "screen_state.json")
-SETUP_STATE_FILE = os.path.join(BASE_DIR, "setup_state.json")
 
 def read_screen_state():
     try:
@@ -38,17 +37,6 @@ def read_screen_state():
 def write_screen_state(state):
     with open(SCREEN_STATE_FILE, "w") as f:
         json.dump({"screen": state}, f)
-
-def read_setup_state():
-    try:
-        with open(SETUP_STATE_FILE, "r") as f:
-            return json.load(f).get("setup_complete", False)
-    except Exception:
-        return False
-
-def write_setup_state(value: bool):
-    with open(SETUP_STATE_FILE, "w") as f:
-        json.dump({"setup_complete": bool(value)}, f)
 
 def load_json(path, default):
     try:

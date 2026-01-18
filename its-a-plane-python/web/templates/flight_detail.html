@@ -4,6 +4,7 @@
 {% set dest_code = flight.destination or flight.destination_iata %}
 {% set origin_label = flight.origin_name or origin_code %}
 {% set dest_label = flight.destination_name or dest_code %}
+{% set has_destination = dest_label and dest_label|string|lower != "unknown" %}
 {% set progress = route_progress(flight.distance_origin, flight.distance_destination) %}
 {% set route_total = flight.route_length or (flight.distance_origin + flight.distance_destination if flight.distance_origin is not none and flight.distance_destination is not none else None) or flight.farthest_value %}
 {% set trail0 = flight.trail[0] if flight.trail and flight.trail|length > 0 else None %}
@@ -12,10 +13,10 @@
 {% set speed_units = flight.ground_speed_unit or flight.ground_speed_units or "kts" %}
 {% set distance_unit = distance_unit_label() %}
 
-<div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3">
-  <div class="flex-grow-1">
-    <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
-      <div class="d-flex align-items-center gap-2">
+<div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 w-100">
+  <div class="flex-grow-1 w-100">
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-4 w-100">
+      <div class="d-flex align-items-center gap-2 flex-grow-1">
         {% if airline_icon %}
           <img src="{{ airline_icon }}" alt="{{ flight.airline }}" class="rounded" style="width: 36px; height: 36px;">
         {% else %}
@@ -79,7 +80,7 @@
       </div>
     {% endif %}
 
-    {% if progress is not none %}
+    {% if progress is not none and has_destination %}
       <div class="mb-3">
         <div class="position-relative" style="height: 6px;">
           <div class="progress" style="height: 6px;">
@@ -92,6 +93,21 @@
         <div class="d-flex justify-content-between small text-muted mt-1">
           <span>{{ flight.distance_origin | round(1) }} {{ distance_unit }} traveled</span>
           <span>{{ flight.distance_destination | round(1) }} {{ distance_unit }} remaining</span>
+        </div>
+      </div>
+    {% elif flight.distance_origin is not none %}
+      <div class="mb-3">
+        <div class="position-relative" style="height: 6px;">
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar bg-secondary" role="progressbar" style="width: 100%;"
+                 aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <i class="fas fa-plane text-muted position-absolute"
+             style="left: 100%; top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
+        </div>
+        <div class="d-flex justify-content-between small text-muted mt-1">
+          <span>{{ flight.distance_origin | round(1) }} {{ distance_unit }} traveled</span>
+          <span>? remaining</span>
         </div>
       </div>
     {% endif %}

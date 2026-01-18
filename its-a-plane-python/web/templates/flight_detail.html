@@ -12,6 +12,7 @@
 {% set display_speed = flight.ground_speed if flight.ground_speed is not none else (trail0.spd if trail0 is not none and trail0.spd is not none else None) %}
 {% set speed_units = flight.ground_speed_unit or flight.ground_speed_units or "kts" %}
 {% set distance_unit = distance_unit_label() %}
+{% set route_heat = "bg-success" if route_total and route_total < 300 else ("bg-warning" if route_total and route_total < 1000 else ("bg-danger" if route_total else "bg-secondary")) %}
 
 <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3 w-100">
   <div class="flex-grow-1 w-100">
@@ -116,18 +117,18 @@
       <div class="small text-muted mb-3">
         {% if flight.distance is not none %}
           <div>
-            <i class="far fa-circle-dot me-1"></i>
+            <span class="d-inline-block rounded-circle me-2 {{ offset_badge_class(flight.distance) }}" style="width: 8px; height: 8px;"></span>
             <strong>Overhead offset:</strong> {{ flight.distance | round(1) }} {{ distance_unit }}
           </div>
         {% endif %}
         {% if route_total %}
           <div>
-            <i class="fas fa-ruler me-1"></i>
+            <span class="d-inline-block rounded-circle me-2 {{ route_heat }}" style="width: 8px; height: 8px;"></span>
             <strong>Route length:</strong> {{ route_total | round(1) }} {{ distance_unit }}
           </div>
         {% endif %}
         {% if flight.timestamp %}
-          <div>
+          <div title="{{ flight.timestamp }}">
             <i class="fas fa-clock me-1"></i>
             <strong>Seen:</strong> {{ time_ago(flight.timestamp) or flight.timestamp }}
           </div>

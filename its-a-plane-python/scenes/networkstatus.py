@@ -19,17 +19,25 @@ STATUS_MESSAGES = {
 class NetworkStatusScene(object):
     def __init__(self):
         super().__init__()
-        # Match logo/icon behavior: load from ./icons relative to CWD.
-        self._qr_path = os.path.join("icons", "network_qr.png")
+        # Match logo/icon behavior: load from ./icons relative to CWD, with fallbacks.
+        self._qr_paths = [
+            os.path.join("icons", "network_qr.png"),
+            os.path.expanduser(os.path.join("~", "icons", "network_qr.png")),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons", "network_qr.png")),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "icons", "network_qr.png")),
+        ]
         self._qr_img = None
         self._load_qr()
 
     def _load_qr(self):
-        try:
-            img = Image.open(self._qr_path)
-            self._qr_img = img.convert("RGB")
-        except Exception:
-            self._qr_img = None
+        for path in self._qr_paths:
+            try:
+                img = Image.open(path)
+                self._qr_img = img.convert("RGB")
+                return
+            except Exception:
+                continue
+        self._qr_img = None
 
     def _draw_icon(self, x, y, colour):
         # Fallback: 9x9 Wi-Fi icon with a diagonal slash.

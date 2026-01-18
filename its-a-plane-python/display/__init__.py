@@ -335,7 +335,7 @@ class Display(
 
         net_error = self._net_status != network_status.NetStatus.OK
         if net_error:
-            if not self._net_error_active:
+            if (not self._net_error_active) or (self.enabled_tags != {"net_status"}):
                 self._net_error_active = True
                 self.enabled_tags = {"net_status"}
                 self._update_post_swap_requirement()

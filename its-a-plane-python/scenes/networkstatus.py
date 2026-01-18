@@ -1,4 +1,8 @@
 # scenes/networkstatus.py
+import os
+
+from PIL import Image
+
 from utilities.animator import Animator
 from utilities.network_status import NetStatus
 from setup import colours, fonts, screen
@@ -15,22 +19,28 @@ STATUS_MESSAGES = {
 class NetworkStatusScene(object):
     def __init__(self):
         super().__init__()
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        self._qr_path = os.path.join(base_dir, "icons", "network_qr.png")
+        self._qr_img = None
+        self._load_qr()
+
+    def _load_qr(self):
+        try:
+            img = Image.open(self._qr_path)
+            self._qr_img = img.convert("RGB")
+        except Exception:
+            self._qr_img = None
 
     def _draw_icon(self, x, y, colour):
-        # 9x9 Wi-Fi icon with a diagonal slash.
+        # Fallback: 9x9 Wi-Fi icon with a diagonal slash.
         pixels = [
-            # outer arc
             (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0),
             (0, 1), (8, 1),
             (0, 2), (8, 2),
-            # middle arc
             (2, 3), (3, 3), (4, 3), (5, 3), (6, 3),
             (2, 4), (6, 4),
-            # inner arc
             (3, 5), (4, 5), (5, 5),
-            # dot
             (4, 7),
-            # slash
             (1, 8), (2, 7), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1),
         ]
         for dx, dy in pixels:
@@ -47,20 +57,19 @@ class NetworkStatusScene(object):
         msg = STATUS_MESSAGES.get(status, "NET ERROR")
         colour = colours.RED
 
-        # Center text roughly (extrasmall font width ~4).
-        text_width = len(msg) * 4
-        text_x = max(0, (screen.WIDTH - text_width) // 2)
-        text_y = 16
+        if self._qr_img is not None:
+            self.set_image(self._qr_img, 0, 0)
+        else:
+            # If no QR, draw the icon on the left as a fallback.
+            self._draw_icon(11, 11, colour)
 
-        icon_x = max(0, (screen.WIDTH - 9) // 2)
+        # Right half layout (x=32..63).
+        text_width = len(msg) * 4
+        text_x = 32 + max(0, (32 - text_width) // 2)
+        text_y = 18
+
+        icon_x = 32 + (32 - 9) // 2
         icon_y = 6
         self._draw_icon(icon_x, icon_y, colour)
 
         self.draw_text(fonts.extrasmall, text_x, text_y, colour, msg)
-
-        url_line1 = "overhead.local"
-        url_line2 = "/api/network"
-        line1_x = max(0, (screen.WIDTH - (len(url_line1) * 4)) // 2)
-        line2_x = max(0, (screen.WIDTH - (len(url_line2) * 4)) // 2)
-        self.draw_text(fonts.extrasmall, line1_x, 22, colour, url_line1)
-        self.draw_text(fonts.extrasmall, line2_x, 28, colour, url_line2)

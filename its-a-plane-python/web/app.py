@@ -4,10 +4,13 @@ import json
 import os
 import subprocess
 import re
+import sys
 
 # /web is the folder that this file lives in
 WEB_DIR = os.path.dirname(__file__)
 BASE_DIR = os.path.abspath(os.path.join(WEB_DIR, ".."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 app = Flask(
     __name__,
@@ -24,6 +27,10 @@ LOGO_DIR_CANDIDATES = [
     os.path.abspath(os.path.join(BASE_DIR, "..", "logos")),
     os.path.expanduser(os.path.join("~", "logos")),
 ]
+try:
+    from config import DISTANCE_UNITS
+except Exception:
+    DISTANCE_UNITS = "imperial"
 
 
 def offset_badge_class(distance):
@@ -55,6 +62,13 @@ def route_progress(distance_origin, distance_destination):
 
 app.jinja_env.globals["offset_badge_class"] = offset_badge_class
 app.jinja_env.globals["route_progress"] = route_progress
+
+
+def distance_unit_label():
+    return "km" if str(DISTANCE_UNITS).lower() == "metric" else "mi"
+
+
+app.jinja_env.globals["distance_unit_label"] = distance_unit_label
 
 
 def _parse_timestamp(value):
@@ -94,11 +108,18 @@ def time_ago(value):
 def _logo_path_for(icao):
     if not icao:
         return None
-    filename = f"{icao}.png"
+    icao = str(icao).upper()
+    web_suffixes = ("png", "jpg", "jpeg", "svg")
+    base_filename = f"{icao}.png"
     for base in LOGO_DIR_CANDIDATES:
-        path = os.path.join(base, filename)
-        if os.path.isfile(path):
-            return base, filename
+        for ext in web_suffixes:
+            web_filename = f"{icao}--web.{ext}"
+            web_path = os.path.join(base, web_filename)
+            if os.path.isfile(web_path):
+                return base, web_filename
+        base_path = os.path.join(base, base_filename)
+        if os.path.isfile(base_path):
+            return base, base_filename
     return None
 
 

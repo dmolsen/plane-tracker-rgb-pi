@@ -58,6 +58,12 @@ FLAGS_DIR = os.path.join(BASE_DIR, "flags")
 FIXTURE_FLAG_FILE = os.path.join(FLAGS_DIR, "force_fixture.on")
 FIXTURE_DATA_FILE = os.path.join(BASE_DIR, "fixtures", "fixture_flights.json")
 
+LOGO_DIR_CANDIDATES = [
+    os.path.abspath(os.path.join(BASE_DIR, "..", "logos")),
+    os.path.expanduser(os.path.join("~", "logos")),
+]
+WEB_LOGO_EXTS = ("png", "jpg", "jpeg", "svg")
+
 # --- Utility Functions ---
 
 def safe_load_json(path: str):
@@ -80,6 +86,21 @@ def load_fixture_flights():
     data = safe_load_json(FIXTURE_DATA_FILE)
     # Ensure it's a list of dicts
     return data if isinstance(data, list) else []
+
+
+def _select_logo_dir():
+    for base in LOGO_DIR_CANDIDATES:
+        if os.path.isdir(base):
+            return base
+    return LOGO_DIR_CANDIDATES[-1]
+
+
+def _web_logo_exists(icao: str, base: str):
+    for ext in WEB_LOGO_EXTS:
+        path = os.path.join(base, f"{icao}--web.{ext}")
+        if os.path.isfile(path):
+            return True
+    return False
 
 def ordinal(n: int):
     return f"{n}{'tsnrhtdd'[(n//10 % 10 != 1) * (n % 10 < 4) * n % 10::4]}"
@@ -302,6 +323,7 @@ class Overhead:
         self._data = []
         self._new_data = False
         self._processing = False
+        self._logo_cache = set()
 
     # Public method
     def grab_data(self):
@@ -343,6 +365,48 @@ class Overhead:
                 return default
         print("  ✅ SUCCESS")
         return cur
+
+
+    def _cache_airline_logo(self, owner_iata: str, owner_icao: str):
+        if not owner_icao:
+            return
+        icao = str(owner_icao).upper()
+        if icao in BLANK_FIELDS:
+            return
+        if not icao or icao in self._logo_cache:
+            return
+
+        logo_dir = _select_logo_dir()
+        os.makedirs(logo_dir, exist_ok=True)
+        if _web_logo_exists(icao, logo_dir):
+            return
+
+        iata = str(owner_iata or "").upper()
+        if iata in BLANK_FIELDS:
+            iata = ""
+        try:
+            result = self._api.get_airline_logo(iata or icao, icao)
+        except Exception:
+            self._logo_cache.add(icao)
+            return
+
+        if not result:
+            self._logo_cache.add(icao)
+            return
+
+        content, ext = result
+        if not content or not ext:
+            self._logo_cache.add(icao)
+            return
+
+        ext = ext.lower().split("?", 1)[0]
+        filename = f"{icao}--web.{ext}"
+        path = os.path.join(logo_dir, filename)
+        try:
+            with open(path, "wb") as f:
+                f.write(content)
+        except Exception:
+            self._logo_cache.add(icao)
 
 
     # Core data grab
@@ -448,6 +512,15 @@ class Overhead:
                             "plane_longitude": f.longitude,
                             "vertical_speed": f.vertical_speed,
                             "direction": degrees_to_cardinal(plane_bearing(f)),
+                            "altitude": (
+                                self.safe_get(d, "trail", 0, "alt")
+                                or getattr(f, "altitude", None)
+                            ),
+                            "ground_speed": (
+                                self.safe_get(d, "trail", 0, "spd")
+                                or getattr(f, "ground_speed", None)
+                                or getattr(f, "speed", None)
+                            ),
 
                             # --- Ownership ---
                             "owner_iata": f.airline_iata or "N/A",
@@ -488,6 +561,8 @@ class Overhead:
                         entry["flightaware_live"] = urls["live"]
                         entry["flightaware_history"] = urls["history"]
                         entry["flightaware_hint"] = urls["hint"]
+
+                        self._cache_airline_logo(entry.get("owner_iata"), entry.get("owner_icao"))
 
                         # Append to current data
                         data.append(entry)

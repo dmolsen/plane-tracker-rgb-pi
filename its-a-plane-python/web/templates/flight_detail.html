@@ -1,10 +1,13 @@
 {% set aircraft_img = flight.aircraft_image_url or flight.aircraft_image %}
-{% set airline_icon = flight.airline_icon or flight.airline_icon_url or flight.airline_logo or flight.airline_logo_url %}
-{% set origin_label = flight.origin_name or flight.origin or flight.origin_iata %}
-{% set dest_label = flight.destination_name or flight.destination or flight.destination_iata %}
+{% set airline_icon = airline_logo_url(flight) or flight.airline_icon or flight.airline_icon_url or flight.airline_logo or flight.airline_logo_url %}
+{% set origin_code = flight.origin or flight.origin_iata %}
+{% set dest_code = flight.destination or flight.destination_iata %}
+{% set origin_label = flight.origin_name or origin_code %}
+{% set dest_label = flight.destination_name or dest_code %}
 {% set progress = route_progress(flight.distance_origin, flight.distance_destination) %}
+{% set route_total = flight.route_length or (flight.distance_origin + flight.distance_destination if flight.distance_origin is not none and flight.distance_destination is not none else None) or flight.farthest_value %}
 
-<div class="d-flex align-items-start justify-content-between gap-3">
+<div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3">
   <div class="flex-grow-1">
     <div class="d-flex align-items-center gap-2 mb-1">
       {% if airline_icon %}
@@ -24,17 +27,24 @@
         {% endif %}
       </div>
       {% if flight.distance is not none %}
-        <span class="badge {{ offset_badge_class(flight.distance) }}">
+        <span class="badge {{ offset_badge_class(flight.distance) }}"
+              title="Measured from the center of the overhead detection box.">
           Overhead offset {{ flight.distance | round(1) }} mi
         </span>
       {% endif %}
     </div>
 
     {% if origin_label or dest_label %}
-      <div class="small text-muted mb-2">
+      <div class="small text-muted mb-1">
         <i class="fas fa-route me-1"></i>
+        {% if origin_code %}
+          <span class="badge bg-light text-dark border me-1">{{ origin_code }}</span>
+        {% endif %}
         {{ origin_label or "Unknown" }}
         <i class="fas fa-arrow-right mx-1"></i>
+        {% if dest_code %}
+          <span class="badge bg-light text-dark border me-1">{{ dest_code }}</span>
+        {% endif %}
         {{ dest_label or "Unknown" }}
       </div>
     {% endif %}
@@ -49,11 +59,6 @@
       </div>
     {% endif %}
 
-    {% if flight.distance is not none %}
-      <div class="small text-muted mb-2">
-        Measured from the center of the overhead detection box.
-      </div>
-    {% endif %}
 
     {% if flight.altitude or flight.ground_speed %}
       <div class="d-flex flex-wrap gap-2 mb-2">
@@ -83,22 +88,22 @@
       </div>
     {% endif %}
 
-    {% if flight.route_length or flight.farthest_value %}
+    {% if route_total %}
       <div class="small text-muted">
         <i class="fas fa-ruler me-1"></i>
-        Route length: {{ (flight.route_length or flight.farthest_value) | round(1) }} mi
+        Route length: {{ route_total | round(1) }} mi
       </div>
     {% endif %}
 
-    {% if flight.callsign and flight.plane %}
+    {% if flight.timestamp %}
       <div class="small text-muted mt-1">
-        <i class="fas fa-plane me-1"></i>
-        Seen: {{ flight.callsign }} ({{ flight.plane }})
+        <i class="fas fa-clock me-1"></i>
+        Seen: {{ time_ago(flight.timestamp) or flight.timestamp }}
       </div>
     {% endif %}
   </div>
 
   {% if aircraft_img %}
-    <img src="{{ aircraft_img }}" alt="{{ flight.plane }}" class="img-fluid rounded" style="max-width: 120px;">
+    <img src="{{ aircraft_img }}" alt="{{ flight.plane }}" class="img-fluid rounded w-100 w-md-auto" style="max-width: 140px;">
   {% endif %}
 </div>

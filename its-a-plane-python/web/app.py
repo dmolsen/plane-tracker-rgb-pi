@@ -20,6 +20,11 @@ from datetime import datetime, timezone
 def unix_to_datetime(ts):
     return datetime.fromtimestamp(ts, tz=timezone.utc)
 
+LOGO_DIR_CANDIDATES = [
+    os.path.abspath(os.path.join(BASE_DIR, "..", "logos")),
+    os.path.expanduser(os.path.join("~", "logos")),
+]
+
 
 def offset_badge_class(distance):
     try:
@@ -50,6 +55,64 @@ def route_progress(distance_origin, distance_destination):
 
 app.jinja_env.globals["offset_badge_class"] = offset_badge_class
 app.jinja_env.globals["route_progress"] = route_progress
+
+
+def _parse_timestamp(value):
+    if not value:
+        return None
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(value)
+    if isinstance(value, str):
+        if value.lower() == "fixture":
+            return None
+        for fmt in ("%b %d %Y, %H:%M:%S", "%b %d %Y, %I:%M:%S %p"):
+            try:
+                return datetime.strptime(value, fmt)
+            except Exception:
+                continue
+    return None
+
+
+def time_ago(value):
+    dt = _parse_timestamp(value)
+    if not dt:
+        return None
+    delta = datetime.now() - dt
+    seconds = int(delta.total_seconds())
+    if seconds < 60:
+        return "just now"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} min ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours} hr ago"
+    days = hours // 24
+    return f"{days} d ago"
+
+
+def _logo_path_for(icao):
+    if not icao:
+        return None
+    filename = f"{icao}.png"
+    for base in LOGO_DIR_CANDIDATES:
+        path = os.path.join(base, filename)
+        if os.path.isfile(path):
+            return base, filename
+    return None
+
+
+def airline_logo_url(flight):
+    icao = flight.get("owner_icao") if isinstance(flight, dict) else getattr(flight, "owner_icao", None)
+    found = _logo_path_for(icao)
+    if not found:
+        return None
+    _, filename = found
+    return f"/logos/{filename}"
+
+
+app.jinja_env.globals["time_ago"] = time_ago
+app.jinja_env.globals["airline_logo_url"] = airline_logo_url
 
 # JSON flight logs (stored outside /web)
 CLOSEST_FILE = os.path.join(BASE_DIR, "close.txt")
@@ -187,6 +250,15 @@ def farthest_page():
 @app.get("/screen")
 def get_screen():
     return jsonify({"screen": read_screen_state()})
+
+
+@app.get("/logos/<path:filename>")
+def logos(filename):
+    for base in LOGO_DIR_CANDIDATES:
+        path = os.path.join(base, filename)
+        if os.path.isfile(path):
+            return send_from_directory(base, filename)
+    return ("", 404)
 
 
 @app.post("/screen/on")

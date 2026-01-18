@@ -25,7 +25,7 @@
           <div class="fw-semibold">
             {{ flight.airline or "Unknown Airline" }}
             {% if flight.callsign %}
-              <span class="text-muted ms-1">{{ flight.callsign }}</span>
+              <span class="text-muted">{{ flight.callsign }}</span>
             {% endif %}
           </div>
           {% if flight.plane %}

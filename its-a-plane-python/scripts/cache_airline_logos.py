@@ -3,7 +3,7 @@ import io
 import json
 import os
 from datetime import datetime
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -67,7 +67,8 @@ def _select_logo_dir():
 
 def _fetch_logo(url: str):
     try:
-        with urlopen(url, timeout=10) as resp:
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urlopen(req, timeout=10) as resp:
             return resp.read()
     except (HTTPError, URLError):
         return None

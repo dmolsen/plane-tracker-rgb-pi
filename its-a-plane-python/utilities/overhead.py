@@ -4,6 +4,13 @@ import math
 from time import sleep
 from threading import Thread, Lock
 from datetime import datetime, timezone
+from urllib.request import urlopen, Request
+from urllib.error import HTTPError, URLError
+
+try:
+    from PIL import Image
+except Exception:
+    Image = None
 
 from FlightRadar24.api import FlightRadar24API
 from requests.exceptions import ConnectionError
@@ -53,7 +60,6 @@ LOG_FILE = os.path.join(BASE_DIR, "close.txt")
 LOG_FILE_FARTHEST = os.path.join(BASE_DIR, "farthest.txt")
 LOG_FILE_RECENT = os.path.join(BASE_DIR, "recent_flights.json")
 LOG_FILE_DEBUG = os.path.join(BASE_DIR, "debug_latest_flight.json")
-LOGO_FETCH_LOG = os.path.join(BASE_DIR, "logo_fetch.log")
 
 FLAGS_DIR = os.path.join(BASE_DIR, "flags")
 FIXTURE_FLAG_FILE = os.path.join(FLAGS_DIR, "force_fixture.on")
@@ -64,6 +70,9 @@ LOGO_DIR_CANDIDATES = [
     os.path.expanduser(os.path.join("~", "logos")),
 ]
 WEB_LOGO_EXTS = ("png", "jpg", "jpeg", "svg")
+FLIGHTAWARE_LOGO_URL = "https://www.flightaware.com/images/airline_logos/180px/{}.png"
+LOGO_USER_AGENT = "Mozilla/5.0"
+DISPLAY_LOGO_SIZE = (16, 16)
 
 # --- Utility Functions ---
 
@@ -104,11 +113,15 @@ def _web_logo_exists(icao: str, base: str):
     return False
 
 
-def _log_logo_fetch(message: str):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def _write_display_logo(content: bytes, path: str):
+    if Image is None:
+        return
     try:
-        with open(LOGO_FETCH_LOG, "a", encoding="utf-8") as f:
-            f.write(f"{timestamp} {message}\n")
+        from io import BytesIO
+        with Image.open(BytesIO(content)) as img:
+            img = img.convert("RGBA")
+            img = img.resize(DISPLAY_LOGO_SIZE, Image.LANCZOS)
+            img.save(path, format="PNG")
     except Exception:
         pass
 
@@ -391,36 +404,26 @@ class Overhead:
         if _web_logo_exists(icao, logo_dir):
             return
 
-        iata = str(owner_iata or "").upper()
-        if iata in BLANK_FIELDS:
-            iata = ""
+        url = FLIGHTAWARE_LOGO_URL.format(icao)
         try:
-            result = self._api.get_airline_logo(iata or icao, icao)
-        except Exception:
-            _log_logo_fetch(f"LOGO_FAIL icao={icao} iata={iata or '-'} error=exception")
+            req = Request(url, headers={"User-Agent": LOGO_USER_AGENT})
+            with urlopen(req, timeout=10) as resp:
+                content = resp.read()
+        except (HTTPError, URLError):
             self._logo_cache.add(icao)
             return
 
-        if not result:
-            _log_logo_fetch(f"LOGO_MISS icao={icao} iata={iata or '-'}")
+        if not content:
             self._logo_cache.add(icao)
             return
 
-        content, ext = result
-        if not content or not ext:
-            _log_logo_fetch(f"LOGO_BAD icao={icao} iata={iata or '-'}")
-            self._logo_cache.add(icao)
-            return
-
-        ext = ext.lower().split("?", 1)[0]
-        filename = f"{icao}--web.{ext}"
+        filename = f"{icao}--web.png"
         path = os.path.join(logo_dir, filename)
         try:
             with open(path, "wb") as f:
                 f.write(content)
-            _log_logo_fetch(f"LOGO_OK icao={icao} iata={iata or '-'} file={filename} size={len(content)}")
+            _write_display_logo(content, os.path.join(logo_dir, f"{icao}.png"))
         except Exception:
-            _log_logo_fetch(f"LOGO_WRITE_FAIL icao={icao} iata={iata or '-'} file={filename}")
             self._logo_cache.add(icao)
 
 

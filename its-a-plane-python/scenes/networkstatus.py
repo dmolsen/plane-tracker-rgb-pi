@@ -26,7 +26,7 @@ class NetworkStatusScene(object):
             (2, 4), (6, 4),
             (3, 5), (4, 5), (5, 5),
             (4, 7),
-            (1, 6), (1, 5), (2, 4), (3, 3), (4, 2), (5, 1), (6, 0), (7, -1), (8, -2),
+            (0, 6), (1, 5), (2, 4), (3, 3), (4, 2), (5, 1), (6, 0), (7, -1), (8, -2),
         ]
         for dx, dy in pixels:
             self.set_pixel(x + dx, y + dy, colour.red, colour.green, colour.blue)
@@ -49,5 +49,5 @@ class NetworkStatusScene(object):
 
         text_width = len(msg) * 4
         text_x = max(0, (screen.WIDTH - text_width) // 2)
-        text_y = 20
+        text_y = 22
         self.draw_text(fonts.extrasmall, text_x, text_y, colour, msg)

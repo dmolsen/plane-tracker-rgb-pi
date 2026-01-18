@@ -20,6 +20,37 @@ from datetime import datetime, timezone
 def unix_to_datetime(ts):
     return datetime.fromtimestamp(ts, tz=timezone.utc)
 
+
+def offset_badge_class(distance):
+    try:
+        d = float(distance)
+    except Exception:
+        return "bg-secondary"
+    if d <= 2:
+        return "bg-success"
+    if d <= 8:
+        return "bg-primary"
+    if d <= 20:
+        return "bg-secondary"
+    return "bg-dark"
+
+
+def route_progress(distance_origin, distance_destination):
+    try:
+        o = float(distance_origin)
+        d = float(distance_destination)
+        total = o + d
+        if total <= 0:
+            return None
+        pct = int(round((o / total) * 100))
+        return max(0, min(100, pct))
+    except Exception:
+        return None
+
+
+app.jinja_env.globals["offset_badge_class"] = offset_badge_class
+app.jinja_env.globals["route_progress"] = route_progress
+
 # JSON flight logs (stored outside /web)
 CLOSEST_FILE = os.path.join(BASE_DIR, "close.txt")
 FARTHEST_FILE = os.path.join(BASE_DIR, "farthest.txt")

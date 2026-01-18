@@ -1,24 +1,104 @@
-{% if flight.aircraft_image %}
-    <img src="{{ flight.aircraft_image }}" alt="{{ flight.plane }}" class="flight-img">
-{% endif %}
-<p class="mb-1">
-    {% if flight.airline %}
-        <span class="label">Airline:</span> {{ flight.airline }}<br> 
+{% set aircraft_img = flight.aircraft_image_url or flight.aircraft_image %}
+{% set airline_icon = flight.airline_icon or flight.airline_icon_url or flight.airline_logo or flight.airline_logo_url %}
+{% set origin_label = flight.origin_name or flight.origin or flight.origin_iata %}
+{% set dest_label = flight.destination_name or flight.destination or flight.destination_iata %}
+{% set progress = route_progress(flight.distance_origin, flight.distance_destination) %}
+
+<div class="d-flex align-items-start justify-content-between gap-3">
+  <div class="flex-grow-1">
+    <div class="d-flex align-items-center gap-2 mb-1">
+      {% if airline_icon %}
+        <img src="{{ airline_icon }}" alt="{{ flight.airline }}" class="rounded" style="width: 24px; height: 24px;">
+      {% else %}
+        <i class="fas fa-plane text-muted"></i>
+      {% endif %}
+      <div class="flex-grow-1">
+        <div class="fw-semibold">
+          {{ flight.airline or "Unknown Airline" }}
+          {% if flight.callsign %}
+            <span class="text-muted ms-1">{{ flight.callsign }}</span>
+          {% endif %}
+        </div>
+        {% if flight.plane %}
+          <div class="small text-muted">{{ flight.plane }}</div>
+        {% endif %}
+      </div>
+      {% if flight.distance is not none %}
+        <span class="badge {{ offset_badge_class(flight.distance) }}">
+          Overhead offset {{ flight.distance | round(1) }} mi
+        </span>
+      {% endif %}
+    </div>
+
+    {% if origin_label or dest_label %}
+      <div class="small text-muted mb-2">
+        <i class="fas fa-route me-1"></i>
+        {{ origin_label or "Unknown" }}
+        <i class="fas fa-arrow-right mx-1"></i>
+        {{ dest_label or "Unknown" }}
+      </div>
     {% endif %}
-    {% if flight.airline == 'Private owner' %}
-      <span class="label">Registration:</span> <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ flight.callsign }}">{{ flight.callsign }}</a><br>
-      <span class="label">Plane Type:</span> {{ flight.plane }}<br>
-    {% else %}
-      <span class="label">Flight:</span> {{ flight.callsign }} ({{ flight.plane }})<br>
+
+    {% if flight.airline == "Private owner" and flight.callsign %}
+      <div class="small mb-2">
+        <i class="fas fa-id-card me-1"></i>
+        Registration:
+        <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ flight.callsign }}">
+          {{ flight.callsign }}
+        </a>
+      </div>
     {% endif %}
-    {% if flight.origin or flight.destination %}
-      <span class="label">Route:</span> {% if flight.origin %}{{ flight.origin_name }} ({{ flight.origin }}){% else %}Unknown{% endif %} → {% if flight.destination %}{{ flight.destination_name }} ({{ flight.destination }}){% else %}Unknown{% endif %}<br>
+
+    {% if flight.distance is not none %}
+      <div class="small text-muted mb-2">
+        Measured from the center of the overhead detection box.
+      </div>
     {% endif %}
-    {% if flight.distance %}
-      <span class="label">Distance from Home:</span> {{ flight.distance | round(1) }} mi<br>
+
+    {% if flight.altitude or flight.ground_speed %}
+      <div class="d-flex flex-wrap gap-2 mb-2">
+        {% if flight.altitude %}
+          <span class="badge rounded-pill bg-light text-dark border">
+            Alt: {{ flight.altitude | round(0) }} ft
+          </span>
+        {% endif %}
+        {% if flight.ground_speed %}
+          <span class="badge rounded-pill bg-light text-dark border">
+            GS: {{ flight.ground_speed | round(0) }} {{ flight.ground_speed_unit or flight.ground_speed_units or "kts" }}
+          </span>
+        {% endif %}
+      </div>
     {% endif %}
-    {% if flight.farthest_value %}
-      <span class="label">Route Length:</span> {{ flight.farthest_value | round(1) }} mi<br>
+
+    {% if progress is not none %}
+      <div class="mb-2">
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar bg-info" role="progressbar" style="width: {{ progress }}%;"
+               aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="d-flex justify-content-between small text-muted mt-1">
+          <span>{{ flight.distance_origin | round(1) }} mi traveled</span>
+          <span>{{ flight.distance_destination | round(1) }} mi remaining</span>
+        </div>
+      </div>
     {% endif %}
-     <span class="label">Seen:</span> {{ flight.callsign }} ({{ flight.plane }})<br>
-</p>
+
+    {% if flight.route_length or flight.farthest_value %}
+      <div class="small text-muted">
+        <i class="fas fa-ruler me-1"></i>
+        Route length: {{ (flight.route_length or flight.farthest_value) | round(1) }} mi
+      </div>
+    {% endif %}
+
+    {% if flight.callsign and flight.plane %}
+      <div class="small text-muted mt-1">
+        <i class="fas fa-plane me-1"></i>
+        Seen: {{ flight.callsign }} ({{ flight.plane }})
+      </div>
+    {% endif %}
+  </div>
+
+  {% if aircraft_img %}
+    <img src="{{ aircraft_img }}" alt="{{ flight.plane }}" class="img-fluid rounded" style="max-width: 120px;">
+  {% endif %}
+</div>

@@ -21,6 +21,7 @@ BLANK_FIELDS = {"", "N/A", "NONE", None}
 
 PRIMARY_LOGO_URL = "https://cdn.flightradar.com/assets/airlines/logotypes/{}_{}.png"
 ALT_LOGO_URL = "https://www.flightradar.com/static/images/data/operators/{}_logo0.png"
+FLIGHTAWARE_LOGO_URL = "https://www.flightaware.com/images/airline_logos/180px/{}.png"
 
 
 def _load_entries(path: str):
@@ -62,9 +63,11 @@ def main():
     for icao, iata in codes:
         primary = PRIMARY_LOGO_URL.format(iata or icao, icao)
         alt = ALT_LOGO_URL.format(icao)
+        flightaware = FLIGHTAWARE_LOGO_URL.format(icao)
         print(f"{icao} {iata or '-'}")
         print(f"  {primary}")
         print(f"  {alt}")
+        print(f"  {flightaware}")
 
 
 if __name__ == "__main__":

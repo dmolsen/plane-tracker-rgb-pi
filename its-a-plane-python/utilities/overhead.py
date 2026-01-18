@@ -53,6 +53,7 @@ LOG_FILE = os.path.join(BASE_DIR, "close.txt")
 LOG_FILE_FARTHEST = os.path.join(BASE_DIR, "farthest.txt")
 LOG_FILE_RECENT = os.path.join(BASE_DIR, "recent_flights.json")
 LOG_FILE_DEBUG = os.path.join(BASE_DIR, "debug_latest_flight.json")
+LOGO_FETCH_LOG = os.path.join(BASE_DIR, "logo_fetch.log")
 
 FLAGS_DIR = os.path.join(BASE_DIR, "flags")
 FIXTURE_FLAG_FILE = os.path.join(FLAGS_DIR, "force_fixture.on")
@@ -101,6 +102,15 @@ def _web_logo_exists(icao: str, base: str):
         if os.path.isfile(path):
             return True
     return False
+
+
+def _log_logo_fetch(message: str):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with open(LOGO_FETCH_LOG, "a", encoding="utf-8") as f:
+            f.write(f"{timestamp} {message}\n")
+    except Exception:
+        pass
 
 def ordinal(n: int):
     return f"{n}{'tsnrhtdd'[(n//10 % 10 != 1) * (n % 10 < 4) * n % 10::4]}"
@@ -387,15 +397,18 @@ class Overhead:
         try:
             result = self._api.get_airline_logo(iata or icao, icao)
         except Exception:
+            _log_logo_fetch(f"LOGO_FAIL icao={icao} iata={iata or '-'} error=exception")
             self._logo_cache.add(icao)
             return
 
         if not result:
+            _log_logo_fetch(f"LOGO_MISS icao={icao} iata={iata or '-'}")
             self._logo_cache.add(icao)
             return
 
         content, ext = result
         if not content or not ext:
+            _log_logo_fetch(f"LOGO_BAD icao={icao} iata={iata or '-'}")
             self._logo_cache.add(icao)
             return
 
@@ -405,7 +418,9 @@ class Overhead:
         try:
             with open(path, "wb") as f:
                 f.write(content)
+            _log_logo_fetch(f"LOGO_OK icao={icao} iata={iata or '-'} file={filename} size={len(content)}")
         except Exception:
+            _log_logo_fetch(f"LOGO_WRITE_FAIL icao={icao} iata={iata or '-'} file={filename}")
             self._logo_cache.add(icao)
 
 

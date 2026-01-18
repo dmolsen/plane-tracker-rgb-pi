@@ -56,7 +56,7 @@ LOG_FILE_DEBUG = os.path.join(BASE_DIR, "debug_latest_flight.json")
 
 FLAGS_DIR = os.path.join(BASE_DIR, "flags")
 FIXTURE_FLAG_FILE = os.path.join(FLAGS_DIR, "force_fixture.on")
-FIXTURE_DATA_FILE = os.path.join(BASE_DIR, "fixture_flights.json")
+FIXTURE_DATA_FILE = os.path.join(BASE_DIR, "fixtures", "fixture_flights.json")
 
 # --- Utility Functions ---
 

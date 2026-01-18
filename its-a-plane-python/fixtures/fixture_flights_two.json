@@ -1,0 +1,34 @@
+[
+  {
+    "airline": "Delta Air Lines",
+    "plane": "BCS3",
+    "callsign": "DAL2230",
+    "origin": "SLC",
+    "destination": "CMH",
+    "distance": 12.3,
+    "distance_origin": 470.3,
+    "distance_destination": 1056.0,
+    "direction": "E",
+    "time_scheduled_departure": 1736486400,
+    "time_real_departure": 1736488200,
+    "time_scheduled_arrival": 1736497200,
+    "time_estimated_arrival": 1736499000,
+    "timestamp": "fixture"
+  },
+  {
+    "airline": "United",
+    "plane": "A320",
+    "callsign": "UAL999",
+    "origin": "LAX",
+    "destination": "BOS",
+    "distance": 25.8,
+    "distance_origin": 2100.0,
+    "distance_destination": 700.0,
+    "direction": "NE",
+    "time_scheduled_departure": 1736480000,
+    "time_real_departure": 1736480600,
+    "time_scheduled_arrival": 1736500000,
+    "time_estimated_arrival": 1736501800,
+    "timestamp": "fixture"
+  }
+]

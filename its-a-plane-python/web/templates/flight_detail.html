@@ -117,14 +117,16 @@
       <div class="small text-muted mb-3">
         {% if flight.distance is not none %}
           <div>
-            <span class="d-inline-block rounded-circle me-2 {{ offset_badge_class(flight.distance) }}" style="width: 8px; height: 8px;"></span>
+            <i class="far fa-circle-dot me-1"></i>
             <strong>Overhead offset:</strong> {{ flight.distance | round(1) }} {{ distance_unit }}
+            <span class="d-inline-block rounded-circle ms-2 {{ offset_badge_class(flight.distance) }}" style="width: 8px; height: 8px;"></span>
           </div>
         {% endif %}
         {% if route_total %}
           <div>
-            <span class="d-inline-block rounded-circle me-2 {{ route_heat }}" style="width: 8px; height: 8px;"></span>
+            <i class="fas fa-ruler me-1"></i>
             <strong>Route length:</strong> {{ route_total | round(1) }} {{ distance_unit }}
+            <span class="d-inline-block rounded-circle ms-2 {{ route_heat }}" style="width: 8px; height: 8px;"></span>
           </div>
         {% endif %}
         {% if flight.timestamp %}

@@ -32,8 +32,13 @@ class NetworkStatusScene(object):
     def _load_qr(self):
         for path in self._qr_paths:
             try:
-                img = Image.open(path)
-                self._qr_img = img.convert("RGB")
+                img = Image.open(path).convert("RGBA")
+                if img.size != (32, 32):
+                    img = img.resize((32, 32), Image.NEAREST)
+                # Composite on white to avoid black-on-black with transparency.
+                bg = Image.new("RGB", img.size, (255, 255, 255))
+                bg.paste(img, mask=img.split()[3])
+                self._qr_img = bg
                 return
             except Exception:
                 continue

@@ -19,8 +19,8 @@ STATUS_MESSAGES = {
 class NetworkStatusScene(object):
     def __init__(self):
         super().__init__()
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        self._qr_path = os.path.join(base_dir, "icons", "network_qr.png")
+        # Match logo/icon behavior: load from ./icons relative to CWD.
+        self._qr_path = os.path.join("icons", "network_qr.png")
         self._qr_img = None
         self._load_qr()
 

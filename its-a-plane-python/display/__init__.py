@@ -6,6 +6,7 @@ from datetime import datetime
 from setup import frames
 from utilities.animator import Animator
 from utilities.overhead import Overhead
+from utilities import network_status
 
 from scenes.temperature import TemperatureScene
 from scenes.flightdetails import FlightDetailsScene
@@ -17,6 +18,7 @@ from scenes.clock import ClockScene
 from scenes.planedetails import PlaneDetailsScene
 from scenes.daysforecast import DaysForecastScene
 from scenes.date import DateScene
+from scenes.networkstatus import NetworkStatusScene
 
 from rgbmatrix import graphics
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
@@ -116,6 +118,9 @@ class Display(
     FlightDetailsScene,
     PlaneDetailsScene,
 
+    # Network status
+    NetworkStatusScene,
+
     # Status widget (optional)
     # LoadingPulseScene,
 
@@ -172,6 +177,8 @@ class Display(
         self.enabled_tags = {"clock", "date", "temperature", "days_forecast"}
         self._requires_post_swap_redraw = True
         self._update_post_swap_requirement()
+        self._net_status = network_status.current_status()
+        self._net_error_active = self._net_status != network_status.NetStatus.OK
 
         self.delay = frames.PERIOD
 
@@ -291,37 +298,15 @@ class Display(
     # -----------------------------
     # POLICY: tag gating + brightness + pause
     # -----------------------------
+    @Animator.KeyFrame.add(frames.PER_SECOND * 30, run_while_paused=True, order=0)
+    def check_network_status(self, count):
+        self._net_status = network_status.current_status()
+
     @Animator.KeyFrame.add(1, run_while_paused=True, order=0)
     def policy(self, count):
         screen_state = read_screen_state()
         target_brightness = desired_brightness()
         should_be_off = (screen_state == "off") or (target_brightness <= 0)
-
-        flights_active = len(getattr(self, "_data", [])) > 0
-        mode_override = read_mode_override()
-        if mode_override == "auto":
-            new_mode = "flight" if flights_active else "default"
-        else:
-            new_mode = mode_override
-        if new_mode != self._mode:
-            self._mode = new_mode
-            if self._mode == "flight":
-                self.enabled_tags = {
-                    "flight_bg",
-                    "flight_logo",
-                    "journey",
-                    "plane_details",
-                    "flight_details",
-                }
-            else:
-                self.enabled_tags = {"clock", "date", "temperature", "days_forecast"}
-            self._update_post_swap_requirement()
-
-
-            # Force a clean redraw
-            self.reset_scene()
-            self.clear_canvas(f"mode_switch->{self._mode}")
-            self._data_index = 0
 
         if should_be_off:
             if not self._effective_off:
@@ -345,8 +330,49 @@ class Display(
             if hasattr(self, "_redraw_date"):
                 self._redraw_date = True
 
-        if getattr(self.matrix, "brightness", target_brightness) != target_brightness:
-            self._set_matrix_brightness(target_brightness)
+            if getattr(self.matrix, "brightness", target_brightness) != target_brightness:
+                self._set_matrix_brightness(target_brightness)
+
+        net_error = self._net_status != network_status.NetStatus.OK
+        if net_error:
+            if not self._net_error_active:
+                self._net_error_active = True
+                self.enabled_tags = {"net_status"}
+                self._update_post_swap_requirement()
+                self.reset_scene()
+                self.clear_canvas("net_status_change")
+            return
+
+        if self._net_error_active:
+            self._net_error_active = False
+            self._mode = None
+            self.reset_scene()
+            self.clear_canvas("net_status_change")
+
+        flights_active = len(getattr(self, "_data", [])) > 0
+        mode_override = read_mode_override()
+        if mode_override == "auto":
+            new_mode = "flight" if flights_active else "default"
+        else:
+            new_mode = mode_override
+        if new_mode != self._mode:
+            self._mode = new_mode
+            if self._mode == "flight":
+                self.enabled_tags = {
+                    "flight_bg",
+                    "flight_logo",
+                    "journey",
+                    "plane_details",
+                    "flight_details",
+                }
+            else:
+                self.enabled_tags = {"clock", "date", "temperature", "days_forecast"}
+            self._update_post_swap_requirement()
+
+            # Force a clean redraw
+            self.reset_scene()
+            self.clear_canvas(f"mode_switch->{self._mode}")
+            self._data_index = 0
 
 
     # -----------------------------

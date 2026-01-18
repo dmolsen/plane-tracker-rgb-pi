@@ -54,7 +54,8 @@ LOG_FILE_FARTHEST = os.path.join(BASE_DIR, "farthest.txt")
 LOG_FILE_RECENT = os.path.join(BASE_DIR, "recent_flights.json")
 LOG_FILE_DEBUG = os.path.join(BASE_DIR, "debug_latest_flight.json")
 
-FIXTURE_FLAG_FILE = os.path.join(BASE_DIR, "force_fixture_mode")
+FLAGS_DIR = os.path.join(BASE_DIR, "flags")
+FIXTURE_FLAG_FILE = os.path.join(FLAGS_DIR, "force_fixture.on")
 FIXTURE_DATA_FILE = os.path.join(BASE_DIR, "fixture_flights.json")
 
 # --- Utility Functions ---

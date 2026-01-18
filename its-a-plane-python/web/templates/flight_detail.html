@@ -17,7 +17,7 @@
     <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
       <div class="d-flex align-items-center gap-2">
         {% if airline_icon %}
-          <img src="{{ airline_icon }}" alt="{{ flight.airline }}" class="rounded" style="width: 24px; height: 24px;">
+          <img src="{{ airline_icon }}" alt="{{ flight.airline }}" class="rounded" style="width: 36px; height: 36px;">
         {% else %}
           <i class="fas fa-plane text-muted"></i>
         {% endif %}
@@ -86,7 +86,7 @@
             <div class="progress-bar bg-info" role="progressbar" style="width: {{ progress }}%;"
                  aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
-          <i class="fas fa-plane text-dark position-absolute"
+          <i class="fas fa-plane text-muted position-absolute"
              style="left: calc({{ progress }}%); top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">

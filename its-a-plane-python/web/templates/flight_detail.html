@@ -6,10 +6,15 @@
 {% set dest_label = flight.destination_name or dest_code %}
 {% set progress = route_progress(flight.distance_origin, flight.distance_destination) %}
 {% set route_total = flight.route_length or (flight.distance_origin + flight.distance_destination if flight.distance_origin is not none and flight.distance_destination is not none else None) or flight.farthest_value %}
+{% set trail0 = flight.trail[0] if flight.trail and flight.trail|length > 0 else None %}
+{% set display_altitude = flight.altitude if flight.altitude is not none else (trail0.alt if trail0 is not none and trail0.alt is not none else None) %}
+{% set display_speed = flight.ground_speed if flight.ground_speed is not none else (trail0.spd if trail0 is not none and trail0.spd is not none else None) %}
+{% set speed_units = flight.ground_speed_unit or flight.ground_speed_units or "kts" %}
+{% set distance_unit = distance_unit_label() %}
 
 <div class="d-flex flex-column flex-md-row align-items-start justify-content-between gap-3">
   <div class="flex-grow-1">
-    <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
       <div class="d-flex align-items-center gap-2">
         {% if airline_icon %}
           <img src="{{ airline_icon }}" alt="{{ flight.airline }}" class="rounded" style="width: 24px; height: 24px;">
@@ -34,7 +39,7 @@
     </div>
 
     {% if origin_label or dest_label %}
-      <div class="small text-muted mb-2">
+      <div class="small text-muted mb-4">
         <i class="fas fa-route me-1"></i>
         {% if origin_code %}
           <span class="badge bg-light text-dark border me-1">{{ origin_code }}</span>
@@ -49,7 +54,7 @@
     {% endif %}
 
     {% if flight.airline == "Private owner" and flight.callsign %}
-      <div class="small mb-3">
+      <div class="small mb-4">
         <i class="fas fa-id-card me-1"></i>
         Registration:
         <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?NNumbertxt={{ flight.callsign }}">
@@ -59,16 +64,16 @@
     {% endif %}
 
 
-    {% if flight.altitude or flight.ground_speed %}
+    {% if display_altitude or display_speed %}
       <div class="d-flex flex-wrap gap-2 mb-3">
-        {% if flight.altitude %}
+        {% if display_altitude %}
           <span class="badge rounded-pill bg-light text-dark border">
-            Alt: {{ flight.altitude | round(0) }} ft
+            Alt: {{ display_altitude | round(0) }} ft
           </span>
         {% endif %}
-        {% if flight.ground_speed %}
+        {% if display_speed %}
           <span class="badge rounded-pill bg-light text-dark border">
-            GS: {{ flight.ground_speed | round(0) }} {{ flight.ground_speed_unit or flight.ground_speed_units or "kts" }}
+            AS: {{ display_speed | round(0) }} {{ speed_units }}
           </span>
         {% endif %}
       </div>
@@ -81,8 +86,8 @@
                aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">
-          <span>{{ flight.distance_origin | round(1) }} mi traveled</span>
-          <span>{{ flight.distance_destination | round(1) }} mi remaining</span>
+          <span>{{ flight.distance_origin | round(1) }} {{ distance_unit }} traveled</span>
+          <span>{{ flight.distance_destination | round(1) }} {{ distance_unit }} remaining</span>
         </div>
       </div>
     {% endif %}
@@ -91,23 +96,20 @@
       <div class="small text-muted mb-3">
         {% if flight.distance is not none %}
           <div>
-            <i class="fas fa-ruler me-1"></i>
-            Overhead offset: {{ flight.distance | round(1) }} mi
-            <span class="text-muted ms-1" title="Measured from the center of the overhead detection box.">
-              (center of overhead box)
-            </span>
+            <i class="far fa-circle-dot me-1"></i>
+            <strong>Overhead offset:</strong> {{ flight.distance | round(1) }} {{ distance_unit }}
           </div>
         {% endif %}
         {% if route_total %}
           <div>
             <i class="fas fa-ruler me-1"></i>
-            Route length: {{ route_total | round(1) }} mi
+            <strong>Route length:</strong> {{ route_total | round(1) }} {{ distance_unit }}
           </div>
         {% endif %}
         {% if flight.timestamp %}
           <div>
             <i class="fas fa-clock me-1"></i>
-            Seen: {{ time_ago(flight.timestamp) or flight.timestamp }}
+            <strong>Seen:</strong> {{ time_ago(flight.timestamp) or flight.timestamp }}
           </div>
         {% endif %}
       </div>

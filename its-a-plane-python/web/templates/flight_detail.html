@@ -10,6 +10,9 @@
 {% set trail0 = flight.trail[0] if flight.trail and flight.trail|length > 0 else None %}
 {% set display_altitude = flight.altitude if flight.altitude is not none else (trail0.alt if trail0 is not none and trail0.alt is not none else None) %}
 {% set display_speed = flight.ground_speed if flight.ground_speed is not none else (trail0.spd if trail0 is not none and trail0.spd is not none else None) %}
+{% set total_air_minutes = ((flight.time_estimated_arrival or flight.time_scheduled_arrival) - (flight.time_real_departure or flight.time_scheduled_departure)) / 60 if (flight.time_estimated_arrival or flight.time_scheduled_arrival) and (flight.time_real_departure or flight.time_scheduled_departure) else None %}
+{% set total_air_hours = (total_air_minutes // 60) if total_air_minutes is not none else None %}
+{% set total_air_min_rem = (total_air_minutes % 60) if total_air_minutes is not none else None %}
 {% set speed_units = flight.ground_speed_unit or flight.ground_speed_units or "kts" %}
 {% set distance_unit = distance_unit_label() %}
 {% set route_heat = "bg-success" if route_total and route_total < 300 else ("bg-warning" if route_total and route_total < 1000 else ("bg-danger" if route_total else "bg-secondary")) %}
@@ -66,21 +69,6 @@
     {% endif %}
 
 
-    {% if display_altitude or display_speed %}
-      <div class="d-flex flex-wrap gap-2 mb-3">
-        {% if display_altitude %}
-          <span class="badge rounded-pill bg-light text-dark border">
-            Alt: {{ display_altitude | round(0) }} ft
-          </span>
-        {% endif %}
-        {% if display_speed %}
-          <span class="badge rounded-pill bg-light text-dark border">
-            AS: {{ display_speed | round(0) }} {{ speed_units }}
-          </span>
-        {% endif %}
-      </div>
-    {% endif %}
-
     {% if progress is not none and has_destination %}
       <div class="mb-3">
         <div class="position-relative" style="height: 6px;">
@@ -118,15 +106,36 @@
         {% if flight.distance is not none %}
           <div>
             <i class="far fa-circle-dot me-1"></i>
-            <strong>Overhead offset:</strong> {{ flight.distance | round(1) }} {{ distance_unit }}
-            <span class="d-inline-block rounded-circle ms-2 {{ offset_badge_class(flight.distance) }}" style="width: 8px; height: 8px;"></span>
+            <strong>Overhead offset:</strong> {{ "{:,.1f}".format(flight.distance) }} {{ distance_unit }}
+          </div>
+        {% endif %}
+        {% if display_altitude is not none %}
+          <div>
+            <i class="fas fa-mountain me-1"></i>
+            <strong>Altitude:</strong> {{ "{:,.0f}".format(display_altitude) }} ft
+          </div>
+        {% endif %}
+        {% if display_speed is not none %}
+          <div>
+            <i class="fas fa-gauge-high me-1"></i>
+            <strong>Airspeed:</strong> {{ "{:,.0f}".format(display_speed) }} {{ speed_units }}
           </div>
         {% endif %}
         {% if route_total %}
           <div>
             <i class="fas fa-ruler me-1"></i>
-            <strong>Route length:</strong> {{ route_total | round(1) }} {{ distance_unit }}
-            <span class="d-inline-block rounded-circle ms-2 {{ route_heat }}" style="width: 8px; height: 8px;"></span>
+            <strong>Route length:</strong> {{ "{:,.1f}".format(route_total) }} {{ distance_unit }}
+          </div>
+        {% endif %}
+        {% if total_air_minutes is not none %}
+          <div>
+            <i class="fas fa-hourglass-half me-1"></i>
+            <strong>Time aloft:</strong>
+            {% if total_air_hours >= 1 %}
+              {{ total_air_hours | int }}h {{ total_air_min_rem | int }}m
+            {% else %}
+              {{ total_air_min_rem | int }}m
+            {% endif %}
           </div>
         {% endif %}
         {% if flight.timestamp %}

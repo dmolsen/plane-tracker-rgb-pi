@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Tracker</title>
+    <title>Overhead</title>
 
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/touch-icon.png') }}">
-    <meta name="apple-mobile-web-app-title" content="Flight Tracker">
+    <meta name="apple-mobile-web-app-title" content="Overhead">
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
@@ -67,7 +67,7 @@
 <header>
     <div class="d-flex justify-content-between align-items-center">
         <h1 class="mb-0">
-            <i class="fas fa-plane"></i> Flight Tracker Dashboard
+            <i class="fas fa-plane"></i> Overhead
         </h1>
 
         <button id="screenToggle"
@@ -97,13 +97,13 @@
         {% endif %}
         <div class="mt-2">
             <a href="/recent" class="flight-link">Map</a> ·
-            <a href="/recent/list" class="flight-link">Logs</a>
+            <a href="/recent/list" class="flight-link">Recent list</a>
         </div>
     </div>
 
     <!-- Closest Flight -->
     <div class="card shadow-sm p-3">
-        <h5><i class="fas fa-map-marker-alt"></i> All-Time Closest Flight</h5>
+        <h5><i class="fas fa-map-marker-alt"></i> Closest Ever Flight</h5>
         {% if closest %}
             {% with flight=closest %}
                 {% include "flight_detail.html" %}
@@ -114,21 +114,25 @@
             </a>
             {% endif %}
             {% if closest.flightaware_hint %}
-                <small class="text-muted">Hint: {{ closest.flightaware_hint }}</small>
+                <small class="text-muted">
+                    Look for: {{ closest.flightaware_hint }}
+                    {% if closest.origin or closest.origin_iata or closest.destination or closest.destination_iata %}
+                        ({{ closest.origin or closest.origin_iata }} → {{ closest.destination or closest.destination_iata or "Unknown" }})
+                    {% endif %}
+                </small>
             {% endif %}
         {% else %}
             <p>No closest flight data available.</p>
         {% endif %}
         <div class="mt-2">
-            <a href="/closest" class="flight-link">Map</a> · 
-            <a href="/closest/list" class="flight-link">Logs</a> · 
-            <a href="/closest/json" class="flight-link">Data</a>
+            <a href="/closest" class="flight-link">Map</a> ·
+            <a href="/closest/list" class="flight-link">Top list</a>
         </div>
     </div>
 
     <!-- Farthest Flight -->
     <div class="card shadow-sm p-3">
-        <h5><i class="fas fa-globe"></i> All-Time Farthest Flight</h5>
+        <h5><i class="fas fa-globe"></i> Farthest Ever Flight</h5>
         {% if farthest %}
             {% with flight=farthest %}
                 {% include "flight_detail.html" %}
@@ -139,15 +143,19 @@
             </a>
             {% endif %}
             {% if farthest.flightaware_hint %}
-                <small class="text-muted">Hint: {{ farthest.flightaware_hint }}</small>
+                <small class="text-muted">
+                    Look for: {{ farthest.flightaware_hint }}
+                    {% if farthest.origin or farthest.origin_iata or farthest.destination or farthest.destination_iata %}
+                        ({{ farthest.origin or farthest.origin_iata }} → {{ farthest.destination or farthest.destination_iata or "Unknown" }})
+                    {% endif %}
+                </small>
             {% endif %}
         {% else %}
             <p>No farthest flight data available.</p>
         {% endif %}
         <div class="mt-2">
             <a href="/farthest" class="flight-link">Map</a> ·
-            <a href="/farthest/list" class="flight-link">Logs</a> · 
-            <a href="/farthest/json" class="flight-link">Data</a>
+            <a href="/farthest/list" class="flight-link">Top list</a>
         </div>
     </div>
 

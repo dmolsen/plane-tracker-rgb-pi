@@ -146,6 +146,23 @@ def degrees_to_cardinal(deg):
     return dirs[idx % 8]
 
 
+def _parse_recent_timestamp(value):
+    if not value:
+        return datetime.min
+    if isinstance(value, (int, float)):
+        try:
+            return datetime.fromtimestamp(value)
+        except Exception:
+            return datetime.min
+    if isinstance(value, str):
+        for fmt in ("%b %d %Y, %H:%M:%S", "%b %d %Y, %I:%M:%S %p"):
+            try:
+                return datetime.strptime(value, fmt)
+            except Exception:
+                continue
+    return datetime.min
+
+
 def plane_bearing(flight, home=LOCATION_DEFAULT):
     lat1, lon1 = map(math.radians, home)
     lat2, lon2 = map(math.radians, (flight.latitude, flight.longitude))
@@ -594,7 +611,7 @@ class Overhead:
                         recent_map = {f.get("callsign"): f for f in recent_flights}
                         recent_map[entry["callsign"]] = entry
                         recent_flights = list(recent_map.values())
-                        recent_flights.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+                        recent_flights.sort(key=lambda x: _parse_recent_timestamp(x.get("timestamp")), reverse=True)
                         recent_flights = recent_flights[:MAX_RECENT_FLIGHTS]
                         safe_write_json(LOG_FILE_RECENT, recent_flights)
 

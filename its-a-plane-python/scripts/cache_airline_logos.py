@@ -27,7 +27,7 @@ OUTPUT_EXT = "png"
 DISPLAY_LOGO_SIZE = (16, 16)
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageEnhance, ImageOps
 except Exception:
     Image = None
 
@@ -82,6 +82,9 @@ def _write_display_logo(content: bytes, path: str):
         with Image.open(io.BytesIO(content)) as img:
             img = img.convert("RGBA")
             img = img.resize(DISPLAY_LOGO_SIZE, Image.LANCZOS)
+            img = ImageOps.autocontrast(img)
+            img = ImageEnhance.Contrast(img).enhance(1.4)
+            img = ImageEnhance.Color(img).enhance(1.2)
             background = Image.new("RGBA", DISPLAY_LOGO_SIZE, (255, 255, 255, 255))
             background.paste(img, (0, 0), img)
             background.save(path, format="PNG")

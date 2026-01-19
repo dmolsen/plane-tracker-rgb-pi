@@ -118,7 +118,7 @@
             </a>
             {% endif %}
             {% if closest.flightaware_hint %}
-                <small class="text-muted d-block mt-1">
+                <small class="text-muted d-block mt-2" style="font-size: 0.6rem">
                     Look for flight taking off at {{ closest.flightaware_hint }}
                     {% if closest.origin or closest.origin_iata or closest.destination or closest.destination_iata %}
                         from {{ closest.origin or closest.origin_iata }} → {{ closest.destination or closest.destination_iata or "Unknown" }}
@@ -148,7 +148,7 @@
             </a>
             {% endif %}
             {% if farthest.flightaware_hint %}
-                <small class="text-muted d-block mt-1">
+                <small class="text-muted d-block mt-2" style="font-size: 0.6rem">
                     Look for flight taking off at {{ farthest.flightaware_hint }}
                     {% if farthest.origin or farthest.origin_iata or farthest.destination or farthest.destination_iata %}
                         from {{ farthest.origin or farthest.origin_iata }} → {{ farthest.destination or farthest.destination_iata or "Unknown" }}
@@ -165,6 +165,13 @@
     </div>
 
 </div>
+
+<footer class="container mt-4 mb-4 small text-muted">
+    Credits:
+    <a href="https://dmolsen.com" target="_blank" rel="noopener">Dave Olsen</a> ·
+    <a href="https://github.com/c0wsaysmoo/plane-tracker-rgb-pi" target="_blank" rel="noopener">c0wsaysmoo</a> ·
+    <a href="https://github.com/ColinWaddell/FlightTracker" target="_blank" rel="noopener">Colin Waddel</a>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 

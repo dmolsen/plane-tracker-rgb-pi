@@ -124,14 +124,26 @@
           <div class="col">
             <i class="fas fa-mountain me-1"></i>
             <strong>Altitude:</strong> {{ "{:,.0f}".format(display_altitude) }} ft
-            {% if altitude_trend == "up" %}▲{% elif altitude_trend == "down" %}▼{% elif altitude_trend == "steady" %}▬{% endif %}
+            {% if altitude_trend == "up" %}
+              <i class="fas fa-caret-up text-success"></i>
+            {% elif altitude_trend == "down" %}
+              <i class="fas fa-caret-down text-danger"></i>
+            {% elif altitude_trend == "steady" %}
+              <span class="text-muted">—</span>
+            {% endif %}
           </div>
         {% endif %}
         {% if display_speed is not none %}
           <div class="col">
             <i class="fas fa-gauge-high me-1"></i>
             <strong>Airspeed:</strong> {{ "{:,.0f}".format(display_speed) }} {{ speed_units }}
-            {% if speed_trend == "up" %}▲{% elif speed_trend == "down" %}▼{% elif speed_trend == "steady" %}▬{% endif %}
+            {% if speed_trend == "up" %}
+              <i class="fas fa-caret-up text-success"></i>
+            {% elif speed_trend == "down" %}
+              <i class="fas fa-caret-down text-danger"></i>
+            {% elif speed_trend == "steady" %}
+              <span class="text-muted">—</span>
+            {% endif %}
           </div>
         {% endif %}
         {% if heading is not none %}

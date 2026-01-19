@@ -407,41 +407,50 @@ class Overhead:
         return cur
 
 
-    def _cache_airline_logo(self, owner_iata: str, owner_icao: str):
-        if not owner_icao:
-            return
-        icao = str(owner_icao).upper()
-        if icao in BLANK_FIELDS:
-            return
-        if not icao or icao in self._logo_cache:
+    def _cache_airline_logo(self, owner_iata: str, owner_icao: str, callsign: str):
+        icao_candidates = []
+        if owner_icao and str(owner_icao).upper() not in BLANK_FIELDS:
+            icao_candidates.append(str(owner_icao).upper())
+        if callsign:
+            prefix = str(callsign).strip()[:3].upper()
+            if prefix and prefix not in BLANK_FIELDS:
+                icao_candidates.append(prefix)
+
+        if not icao_candidates:
             return
 
         logo_dir = _select_logo_dir()
         os.makedirs(logo_dir, exist_ok=True)
-        if _web_logo_exists(icao, logo_dir):
-            return
 
-        url = FLIGHTAWARE_LOGO_URL.format(icao)
-        try:
-            req = Request(url, headers={"User-Agent": LOGO_USER_AGENT})
-            with urlopen(req, timeout=10) as resp:
-                content = resp.read()
-        except (HTTPError, URLError):
-            self._logo_cache.add(icao)
-            return
+        for icao in icao_candidates:
+            if not icao or icao in self._logo_cache:
+                continue
+            if _web_logo_exists(icao, logo_dir):
+                self._logo_cache.add(icao)
+                continue
 
-        if not content:
-            self._logo_cache.add(icao)
-            return
+            url = FLIGHTAWARE_LOGO_URL.format(icao)
+            try:
+                req = Request(url, headers={"User-Agent": LOGO_USER_AGENT})
+                with urlopen(req, timeout=10) as resp:
+                    content = resp.read()
+            except (HTTPError, URLError):
+                self._logo_cache.add(icao)
+                continue
 
-        filename = f"{icao}--web.png"
-        path = os.path.join(logo_dir, filename)
-        try:
-            with open(path, "wb") as f:
-                f.write(content)
-            _write_display_logo(content, os.path.join(logo_dir, f"{icao}.png"))
-        except Exception:
-            self._logo_cache.add(icao)
+            if not content:
+                self._logo_cache.add(icao)
+                continue
+
+            filename = f"{icao}--web.png"
+            path = os.path.join(logo_dir, filename)
+            try:
+                with open(path, "wb") as f:
+                    f.write(content)
+                _write_display_logo(content, os.path.join(logo_dir, f"{icao}.png"))
+            except Exception:
+                self._logo_cache.add(icao)
+            break
 
 
     # Core data grab
@@ -597,7 +606,11 @@ class Overhead:
                         entry["flightaware_history"] = urls["history"]
                         entry["flightaware_hint"] = urls["hint"]
 
-                        self._cache_airline_logo(entry.get("owner_iata"), entry.get("owner_icao"))
+                        self._cache_airline_logo(
+                            entry.get("owner_iata"),
+                            entry.get("owner_icao"),
+                            entry.get("callsign"),
+                        )
 
                         # Append to current data
                         data.append(entry)

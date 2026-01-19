@@ -123,9 +123,19 @@ def _logo_path_for(icao):
     return None
 
 
+def _callsign_prefix(flight):
+    callsign = flight.get("callsign") if isinstance(flight, dict) else getattr(flight, "callsign", None)
+    if not callsign:
+        return None
+    prefix = str(callsign).strip()[:3].upper()
+    return prefix if prefix and prefix.isalnum() else None
+
+
 def airline_logo_url(flight):
     icao = flight.get("owner_icao") if isinstance(flight, dict) else getattr(flight, "owner_icao", None)
     found = _logo_path_for(icao)
+    if not found:
+        found = _logo_path_for(_callsign_prefix(flight))
     if not found:
         return None
     _, filename = found

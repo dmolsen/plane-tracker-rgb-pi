@@ -54,15 +54,11 @@
       <div class="mb-2">
         <div class="row g-3 align-items-start">
           <div class="col-6">
-            {% if origin_code %}
-              <div class="fw-semibold fs-4 lh-1">{{ origin_code }}</div>
-            {% endif %}
+            <div class="fw-semibold fs-4 lh-1">{{ origin_code or "—" }}</div>
             <div class="text-muted small">{{ origin_label or "Unknown" }}</div>
           </div>
           <div class="col-6 text-end">
-            {% if dest_code %}
-              <div class="fw-semibold fs-4 lh-1">{{ dest_code }}</div>
-            {% endif %}
+            <div class="fw-semibold fs-4 lh-1">{{ dest_code or "—" }}</div>
             <div class="text-muted small">{{ dest_label or "Unknown" }}</div>
           </div>
         </div>

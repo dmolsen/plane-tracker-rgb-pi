@@ -1,9 +1,9 @@
 <div class="card shadow-sm p-3 mb-3">
   {% include "flight_detail.html" %}
   {% if flight.flightaware_live or flight.flightaware_history %}
-  <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_live or flight.flightaware_history }}">
+  <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_live if is_flight_live(flight) else flight.flightaware_history }}">
       <i class="fas fa-external-link-alt"></i>
-      {% if flight.flightaware_live %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
+      {% if is_flight_live(flight) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
   </a>
   {% if flight.flightaware_hint %}
     <div>

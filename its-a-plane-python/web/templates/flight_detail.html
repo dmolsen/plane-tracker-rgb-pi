@@ -14,6 +14,9 @@
 {% set flight_spd = flight.get("ground_speed") if flight is mapping else (flight.ground_speed if flight.ground_speed is defined else None) %}
 {% set display_altitude = flight_alt if flight_alt is not none else (trail_alt if trail_alt is not none else None) %}
 {% set display_speed = flight_spd if flight_spd is not none else (trail_spd if trail_spd is not none else None) %}
+{% set altitude_trend = flight.get("altitude_trend") if flight is mapping else None %}
+{% set speed_trend = flight.get("speed_trend") if flight is mapping else None %}
+{% set heading = flight.get("heading") if flight is mapping else (flight.heading if flight.heading is defined else None) %}
 {% set total_air_minutes = ((flight.time_estimated_arrival or flight.time_scheduled_arrival) - (flight.time_real_departure or flight.time_scheduled_departure)) / 60 if (flight.time_estimated_arrival or flight.time_scheduled_arrival) and (flight.time_real_departure or flight.time_scheduled_departure) else None %}
 {% set total_air_hours = (total_air_minutes // 60) if total_air_minutes is not none else None %}
 {% set total_air_min_rem = (total_air_minutes % 60) if total_air_minutes is not none else None %}
@@ -109,7 +112,7 @@
       </div>
     {% endif %}
 
-    {% if flight.distance is not none or route_total or flight.timestamp or display_altitude is not none or display_speed is not none %}
+    {% if flight.distance is not none or route_total or flight.timestamp or display_altitude is not none or display_speed is not none or heading is not none %}
       <div class="row row-cols-1 row-cols-md-3 g-2 small text-muted mb-4">
         {% if flight.distance is not none %}
           <div class="col">
@@ -121,12 +124,20 @@
           <div class="col">
             <i class="fas fa-mountain me-1"></i>
             <strong>Altitude:</strong> {{ "{:,.0f}".format(display_altitude) }} ft
+            {% if altitude_trend == "up" %}▲{% elif altitude_trend == "down" %}▼{% elif altitude_trend == "steady" %}▬{% endif %}
           </div>
         {% endif %}
         {% if display_speed is not none %}
           <div class="col">
             <i class="fas fa-gauge-high me-1"></i>
             <strong>Airspeed:</strong> {{ "{:,.0f}".format(display_speed) }} {{ speed_units }}
+            {% if speed_trend == "up" %}▲{% elif speed_trend == "down" %}▼{% elif speed_trend == "steady" %}▬{% endif %}
+          </div>
+        {% endif %}
+        {% if heading is not none %}
+          <div class="col">
+            <i class="fas fa-compass me-1"></i>
+            <strong>Heading:</strong> {{ heading | round(0) }}°{% if flight.direction %} {{ flight.direction }}{% endif %}
           </div>
         {% endif %}
         {% if route_total %}

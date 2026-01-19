@@ -194,6 +194,20 @@ def is_recent_map_compatible(e):
         )
     )
 
+
+def _trend_from_trail(trail, key, min_points=5, threshold=1):
+    if not isinstance(trail, list):
+        return None
+    values = [p.get(key) for p in trail if isinstance(p, dict) and p.get(key) is not None]
+    if len(values) < min_points:
+        return None
+    delta = values[0] - values[min_points - 1]
+    if delta > threshold:
+        return "up"
+    if delta < -threshold:
+        return "down"
+    return "steady"
+
 def build_flightaware_urls(entry):
     """
     Returns a dict with:
@@ -556,6 +570,10 @@ class Overhead:
                             "plane_longitude": f.longitude,
                             "vertical_speed": f.vertical_speed,
                             "direction": degrees_to_cardinal(plane_bearing(f)),
+                            "heading": (
+                                self.safe_get(d, "trail", 0, "hd")
+                                or getattr(f, "heading", None)
+                            ),
                             "altitude": (
                                 self.safe_get(d, "trail", 0, "alt")
                                 or getattr(f, "altitude", None)
@@ -565,6 +583,8 @@ class Overhead:
                                 or getattr(f, "ground_speed", None)
                                 or getattr(f, "speed", None)
                             ),
+                            "altitude_trend": _trend_from_trail(self.safe_get(d, "trail", default=[]), "alt", threshold=200),
+                            "speed_trend": _trend_from_trail(self.safe_get(d, "trail", default=[]), "spd", threshold=10),
 
                             # --- Ownership ---
                             "owner_iata": f.airline_iata or "N/A",

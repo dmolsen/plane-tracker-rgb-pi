@@ -67,7 +67,9 @@
 <header>
     <div class="d-flex justify-content-between align-items-center">
         <h1 class="mb-0">
-            <i class="fas fa-plane"></i> Overhead
+            <a href="/" class="text-white text-decoration-none">
+                <i class="fas fa-plane"></i> Overhead
+            </a>
         </h1>
 
         <button id="screenToggle"
@@ -87,9 +89,10 @@
             {% with flight=recent %}
                 {% include "flight_detail.html" %}
             {% endwith %}
-            {% if recent.flightaware_live %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_live }}">
-                <i class="fas fa-external-link-alt"></i> View Live on FlightAware
+            {% if recent.flightaware_live or recent.flightaware_history %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_live if is_flight_live(recent) else recent.flightaware_history }}">
+                <i class="fas fa-external-link-alt"></i>
+                {% if is_flight_live(recent) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
             {% endif %}
         {% else %}
@@ -109,9 +112,9 @@
                 {% include "flight_detail.html" %}
             {% endwith %}
             {% if closest.flightaware_live or closest.flightaware_history %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_live or closest.flightaware_history }}">
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_live if is_flight_live(closest) else closest.flightaware_history }}">
                 <i class="fas fa-external-link-alt"></i>
-                {% if closest.flightaware_live %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
+                {% if is_flight_live(closest) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
             {% endif %}
             {% if closest.flightaware_hint %}
@@ -139,9 +142,9 @@
                 {% include "flight_detail.html" %}
             {% endwith %}
             {% if farthest.flightaware_live or farthest.flightaware_history %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_live or farthest.flightaware_history }}">
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_live if is_flight_live(farthest) else farthest.flightaware_history }}">
                 <i class="fas fa-external-link-alt"></i>
-                {% if farthest.flightaware_live %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
+                {% if is_flight_live(farthest) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
             {% endif %}
             {% if farthest.flightaware_hint %}

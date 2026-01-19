@@ -145,6 +145,26 @@ def airline_logo_url(flight):
 app.jinja_env.globals["time_ago"] = time_ago
 app.jinja_env.globals["airline_logo_url"] = airline_logo_url
 
+
+def is_flight_live(flight):
+    if not flight:
+        return False
+    live_url = flight.get("flightaware_live") if isinstance(flight, dict) else getattr(flight, "flightaware_live", None)
+    if not live_url:
+        return False
+    eta = flight.get("time_estimated_arrival") if isinstance(flight, dict) else getattr(flight, "time_estimated_arrival", None)
+    sta = flight.get("time_scheduled_arrival") if isinstance(flight, dict) else getattr(flight, "time_scheduled_arrival", None)
+    arrival = eta or sta
+    if not arrival:
+        return False
+    try:
+        return datetime.now().timestamp() < float(arrival)
+    except Exception:
+        return False
+
+
+app.jinja_env.globals["is_flight_live"] = is_flight_live
+
 # JSON flight logs (stored outside /web)
 CLOSEST_FILE = os.path.join(BASE_DIR, "close.txt")
 FARTHEST_FILE = os.path.join(BASE_DIR, "farthest.txt")

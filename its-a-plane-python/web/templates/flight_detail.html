@@ -113,7 +113,7 @@
         {% if flight.distance is not none %}
           <div class="col">
             <i class="far fa-circle-dot me-1"></i>
-            <strong>Overhead offset:</strong> {{ "{:,.1f}".format(flight.distance) }} {{ distance_unit }}
+            <strong>Closest approach:</strong> {{ "{:,.1f}".format(flight.distance) }} {{ distance_unit }}
           </div>
         {% endif %}
         {% if display_altitude is not none %}

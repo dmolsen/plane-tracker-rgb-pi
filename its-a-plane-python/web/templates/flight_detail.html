@@ -105,34 +105,34 @@
       </div>
     {% endif %}
 
-    {% if flight.distance is not none or route_total or flight.timestamp %}
-      <div class="small text-muted mb-3">
+    {% if flight.distance is not none or route_total or flight.timestamp or display_altitude is not none or display_speed is not none %}
+      <div class="row row-cols-1 row-cols-md-3 g-2 small text-muted mb-3">
         {% if flight.distance is not none %}
-          <div>
+          <div class="col">
             <i class="far fa-circle-dot me-1"></i>
             <strong>Overhead offset:</strong> {{ "{:,.1f}".format(flight.distance) }} {{ distance_unit }}
           </div>
         {% endif %}
         {% if display_altitude is not none %}
-          <div>
+          <div class="col">
             <i class="fas fa-mountain me-1"></i>
             <strong>Altitude:</strong> {{ "{:,.0f}".format(display_altitude) }} ft
           </div>
         {% endif %}
         {% if display_speed is not none %}
-          <div>
+          <div class="col">
             <i class="fas fa-gauge-high me-1"></i>
             <strong>Airspeed:</strong> {{ "{:,.0f}".format(display_speed) }} {{ speed_units }}
           </div>
         {% endif %}
         {% if route_total %}
-          <div>
+          <div class="col">
             <i class="fas fa-ruler me-1"></i>
             <strong>Route length:</strong> {{ "{:,.1f}".format(route_total) }} {{ distance_unit }}
           </div>
         {% endif %}
         {% if total_air_minutes is not none %}
-          <div>
+          <div class="col">
             <i class="fas fa-hourglass-half me-1"></i>
             <strong>Time aloft:</strong>
             {% if total_air_hours >= 1 %}
@@ -143,7 +143,7 @@
           </div>
         {% endif %}
         {% if flight.timestamp %}
-          <div title="{{ flight.timestamp }}">
+          <div class="col" title="{{ flight.timestamp }}">
             <i class="fas fa-clock me-1"></i>
             <strong>Seen:</strong> {{ time_ago(flight.timestamp) or flight.timestamp }}
           </div>

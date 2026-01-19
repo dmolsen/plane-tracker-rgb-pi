@@ -114,10 +114,10 @@
             </a>
             {% endif %}
             {% if closest.flightaware_hint %}
-                <small class="text-muted">
-                    Look for: {{ closest.flightaware_hint }}
+                <small class="text-muted d-block mt-1">
+                    Look for flight taking off at {{ closest.flightaware_hint }}
                     {% if closest.origin or closest.origin_iata or closest.destination or closest.destination_iata %}
-                        ({{ closest.origin or closest.origin_iata }} → {{ closest.destination or closest.destination_iata or "Unknown" }})
+                        from {{ closest.origin or closest.origin_iata }} → {{ closest.destination or closest.destination_iata or "Unknown" }}
                     {% endif %}
                 </small>
             {% endif %}
@@ -143,10 +143,10 @@
             </a>
             {% endif %}
             {% if farthest.flightaware_hint %}
-                <small class="text-muted">
-                    Look for: {{ farthest.flightaware_hint }}
+                <small class="text-muted d-block mt-1">
+                    Look for flight taking off at {{ farthest.flightaware_hint }}
                     {% if farthest.origin or farthest.origin_iata or farthest.destination or farthest.destination_iata %}
-                        ({{ farthest.origin or farthest.origin_iata }} → {{ farthest.destination or farthest.destination_iata or "Unknown" }})
+                        from {{ farthest.origin or farthest.origin_iata }} → {{ farthest.destination or farthest.destination_iata or "Unknown" }}
                     {% endif %}
                 </small>
             {% endif %}

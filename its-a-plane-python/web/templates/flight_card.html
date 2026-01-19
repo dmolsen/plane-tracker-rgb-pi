@@ -6,10 +6,10 @@
   </a>
   {% if flight.flightaware_hint %}
     <div>
-      <small class="text-muted">
-        Look for: {{ flight.flightaware_hint }}
+      <small class="text-muted d-block mt-1">
+        Look for flight taking off at {{ flight.flightaware_hint }}
         {% if flight.origin or flight.origin_iata or flight.destination or flight.destination_iata %}
-          ({{ flight.origin or flight.origin_iata }} → {{ flight.destination or flight.destination_iata or "Unknown" }})
+          from {{ flight.origin or flight.origin_iata }} → {{ flight.destination or flight.destination_iata or "Unknown" }}
         {% endif %}
       </small>
     </div>

@@ -49,17 +49,19 @@
 
     {% if origin_label or dest_label %}
       <div class="mb-4">
-        <div class="d-flex align-items-center flex-wrap gap-2">
-          <i class="fas fa-route text-muted"></i>
-          {% if origin_code %}
-            <span class="badge bg-light text-dark border fs-6 fw-semibold">{{ origin_code }}</span>
-          {% endif %}
-          <span class="text-muted small">{{ origin_label or "Unknown" }}</span>
-          <i class="fas fa-arrow-right text-muted"></i>
-          {% if dest_code %}
-            <span class="badge bg-light text-dark border fs-6 fw-semibold">{{ dest_code }}</span>
-          {% endif %}
-          <span class="text-muted small">{{ dest_label or "Unknown" }}</span>
+        <div class="row g-3 align-items-start">
+          <div class="col-6">
+            {% if origin_code %}
+              <div class="fw-semibold fs-4 lh-1">{{ origin_code }}</div>
+            {% endif %}
+            <div class="text-muted small">{{ origin_label or "Unknown" }}</div>
+          </div>
+          <div class="col-6 text-end">
+            {% if dest_code %}
+              <div class="fw-semibold fs-4 lh-1">{{ dest_code }}</div>
+            {% endif %}
+            <div class="text-muted small">{{ dest_label or "Unknown" }}</div>
+          </div>
         </div>
       </div>
     {% endif %}

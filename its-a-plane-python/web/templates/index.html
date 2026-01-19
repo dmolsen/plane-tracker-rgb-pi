@@ -108,9 +108,10 @@
             {% with flight=closest %}
                 {% include "flight_detail.html" %}
             {% endwith %}
-            {% if closest.flightaware_history %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_history }}">
-                <i class="fas fa-external-link-alt"></i> View History on FlightAware
+            {% if closest.flightaware_live or closest.flightaware_history %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_live or closest.flightaware_history }}">
+                <i class="fas fa-external-link-alt"></i>
+                {% if closest.flightaware_live %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
             {% endif %}
             {% if closest.flightaware_hint %}
@@ -137,9 +138,10 @@
             {% with flight=farthest %}
                 {% include "flight_detail.html" %}
             {% endwith %}
-            {% if farthest.flightaware_history %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_history }}">
-                <i class="fas fa-external-link-alt"></i> View History on FlightAware
+            {% if farthest.flightaware_live or farthest.flightaware_history %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_live or farthest.flightaware_history }}">
+                <i class="fas fa-external-link-alt"></i>
+                {% if farthest.flightaware_live %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
             {% endif %}
             {% if farthest.flightaware_hint %}

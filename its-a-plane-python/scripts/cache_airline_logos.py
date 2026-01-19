@@ -82,7 +82,9 @@ def _write_display_logo(content: bytes, path: str):
         with Image.open(io.BytesIO(content)) as img:
             img = img.convert("RGBA")
             img = img.resize(DISPLAY_LOGO_SIZE, Image.LANCZOS)
-            img.save(path, format="PNG")
+            background = Image.new("RGBA", DISPLAY_LOGO_SIZE, (255, 255, 255, 255))
+            background.paste(img, (0, 0), img)
+            background.save(path, format="PNG")
     except Exception:
         print(f"  display logo resize failed: {path}")
 

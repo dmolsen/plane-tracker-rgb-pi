@@ -48,17 +48,19 @@
     </div>
 
     {% if origin_label or dest_label %}
-      <div class="small text-muted mb-4">
-        <i class="fas fa-route me-1"></i>
-        {% if origin_code %}
-          <span class="badge bg-light text-dark border me-1">{{ origin_code }}</span>
-        {% endif %}
-        {{ origin_label or "Unknown" }}
-        <i class="fas fa-arrow-right mx-1"></i>
-        {% if dest_code %}
-          <span class="badge bg-light text-dark border me-1">{{ dest_code }}</span>
-        {% endif %}
-        {{ dest_label or "Unknown" }}
+      <div class="mb-4">
+        <div class="d-flex align-items-center flex-wrap gap-2">
+          <i class="fas fa-route text-muted"></i>
+          {% if origin_code %}
+            <span class="badge bg-light text-dark border fs-6 fw-semibold">{{ origin_code }}</span>
+          {% endif %}
+          <span class="text-muted small">{{ origin_label or "Unknown" }}</span>
+          <i class="fas fa-arrow-right text-muted"></i>
+          {% if dest_code %}
+            <span class="badge bg-light text-dark border fs-6 fw-semibold">{{ dest_code }}</span>
+          {% endif %}
+          <span class="text-muted small">{{ dest_label or "Unknown" }}</span>
+        </div>
       </div>
     {% endif %}
 
@@ -74,7 +76,7 @@
 
 
     {% if progress is not none and has_destination %}
-      <div class="mb-3">
+      <div class="mb-4">
         <div class="position-relative" style="height: 6px;">
           <div class="progress" style="height: 6px;">
             <div class="progress-bar bg-info" role="progressbar" style="width: {{ progress }}%;"
@@ -89,7 +91,7 @@
         </div>
       </div>
     {% elif flight.distance_origin is not none %}
-      <div class="mb-3">
+      <div class="mb-4">
         <div class="position-relative" style="height: 6px;">
           <div class="progress" style="height: 6px;">
             <div class="progress-bar bg-secondary" role="progressbar" style="width: 100%;"
@@ -106,7 +108,7 @@
     {% endif %}
 
     {% if flight.distance is not none or route_total or flight.timestamp or display_altitude is not none or display_speed is not none %}
-      <div class="row row-cols-1 row-cols-md-3 g-2 small text-muted mb-3">
+      <div class="row row-cols-1 row-cols-md-3 g-2 small text-muted mb-4">
         {% if flight.distance is not none %}
           <div class="col">
             <i class="far fa-circle-dot me-1"></i>

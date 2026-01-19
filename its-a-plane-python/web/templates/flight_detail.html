@@ -8,8 +8,10 @@
 {% set progress = route_progress(flight.distance_origin, flight.distance_destination) %}
 {% set route_total = flight.route_length or (flight.distance_origin + flight.distance_destination if flight.distance_origin is not none and flight.distance_destination is not none else None) or flight.farthest_value %}
 {% set trail0 = flight.trail[0] if flight.trail and flight.trail|length > 0 else None %}
-{% set display_altitude = flight.altitude if flight.altitude is not none else (trail0.alt if trail0 is not none and trail0.alt is not none else None) %}
-{% set display_speed = flight.ground_speed if flight.ground_speed is not none else (trail0.spd if trail0 is not none and trail0.spd is not none else None) %}
+{% set trail_alt = trail0.get("alt") if trail0 is mapping else None %}
+{% set trail_spd = trail0.get("spd") if trail0 is mapping else None %}
+{% set display_altitude = flight.altitude if flight.altitude is not none else (trail_alt if trail_alt is not none else None) %}
+{% set display_speed = flight.ground_speed if flight.ground_speed is not none else (trail_spd if trail_spd is not none else None) %}
 {% set total_air_minutes = ((flight.time_estimated_arrival or flight.time_scheduled_arrival) - (flight.time_real_departure or flight.time_scheduled_departure)) / 60 if (flight.time_estimated_arrival or flight.time_scheduled_arrival) and (flight.time_real_departure or flight.time_scheduled_departure) else None %}
 {% set total_air_hours = (total_air_minutes // 60) if total_air_minutes is not none else None %}
 {% set total_air_min_rem = (total_air_minutes % 60) if total_air_minutes is not none else None %}

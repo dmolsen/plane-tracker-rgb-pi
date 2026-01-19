@@ -91,8 +91,8 @@
              style="left: calc({{ progress }}%); top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">
-          <span>{{ flight.distance_origin | round(1) }} {{ distance_unit }} traveled</span>
-          <span>{{ flight.distance_destination | round(1) }} {{ distance_unit }} remaining</span>
+          <span>{{ "{:,.1f}".format(flight.distance_origin) }} {{ distance_unit }} traveled</span>
+          <span>{{ "{:,.1f}".format(flight.distance_destination) }} {{ distance_unit }} remaining</span>
         </div>
       </div>
     {% elif flight.distance_origin is not none %}
@@ -106,7 +106,7 @@
              style="left: 100%; top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">
-          <span>{{ flight.distance_origin | round(1) }} {{ distance_unit }} traveled</span>
+          <span>{{ "{:,.1f}".format(flight.distance_origin) }} {{ distance_unit }} traveled</span>
           <span>? remaining</span>
         </div>
       </div>

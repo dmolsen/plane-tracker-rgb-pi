@@ -280,7 +280,7 @@ def closest_list():
 @app.get("/farthest/list")
 def farthest_list():
     farthest_flights = load_json(FARTHEST_FILE, [])
-    return render_template("farthest_list.html", title="Farthest Flights", flights=farthest_flights)
+    return render_template("farthest_list.html", title="Longest Route Flights", flights=farthest_flights)
 
 
 @app.get("/recent")

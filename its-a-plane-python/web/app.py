@@ -268,7 +268,7 @@ def farthest_json():
 @app.get("/recent/list")
 def recent_list():
     recent_flights = load_json(RECENT_FILE, [])
-    return render_template("recent_list.html", title="Most Recent Flights", flights=recent_flights)
+    return render_template("recent_list.html", title="Recent Flights", flights=recent_flights)
 
 
 @app.get("/closest/list")

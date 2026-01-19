@@ -50,7 +50,7 @@
         }
 
         .card-title-band {
-            background-color: #eef2f6;
+            background-color: #ddeeff;
             border-radius: 10px;
             padding: 8px 12px;
             margin-bottom: 14px;
@@ -78,7 +78,7 @@
 <body>
 
 <header>
-    <div class="container">
+    <div class="container px-0 px-lg-3">
         <div class="d-flex justify-content-between align-items-center">
             <h1 class="mb-0">
                 <a href="/" class="text-white text-decoration-none">
@@ -99,7 +99,7 @@
 
     <!-- Most Recent Flight -->
     <div class="card shadow-sm p-3">
-        <h5 class="card-title-band"><i class="fas fa-clock"></i> Most Recent Flight</h5>
+        <h5 class="card-title-band mb-4"><i class="fas fa-clock"></i> Most Recent Flight</h5>
         {% if recent %}
             {% with flight=recent %}
                 {% include "flight_detail.html" %}
@@ -121,7 +121,7 @@
 
     <!-- Closest Flight -->
     <div class="card shadow-sm p-3">
-        <h5 class="card-title-band"><i class="fas fa-map-marker-alt"></i> Closest Ever Flight</h5>
+        <h5 class="card-title-band mb-4"><i class="fas fa-map-marker-alt"></i> Closest Ever Flight</h5>
         {% if closest %}
             {% with flight=closest %}
                 {% include "flight_detail.html" %}
@@ -151,7 +151,7 @@
 
     <!-- Farthest Flight -->
     <div class="card shadow-sm p-3">
-        <h5 class="card-title-band"><i class="fas fa-globe"></i> Farthest Ever Flight</h5>
+        <h5 class="card-title-band mb-4"><i class="fas fa-globe"></i> Farthest Ever Flight</h5>
         {% if farthest %}
             {% with flight=farthest %}
                 {% include "flight_detail.html" %}

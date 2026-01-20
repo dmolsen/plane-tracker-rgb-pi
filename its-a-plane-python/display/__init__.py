@@ -164,6 +164,7 @@ class Display(
         # Presentation bookkeeping
         self._dirty = True
         self._effective_off = False
+        self._last_brightness = None
 
         # IMPORTANT: This should mean "a full-canvas clear happened this frame"
         self._redraw_all_this_frame = True
@@ -332,6 +333,11 @@ class Display(
 
             if getattr(self.matrix, "brightness", target_brightness) != target_brightness:
                 self._set_matrix_brightness(target_brightness)
+            self._last_brightness = target_brightness
+
+        if self._last_brightness != target_brightness:
+            self._set_matrix_brightness(target_brightness)
+            self._last_brightness = target_brightness
 
         net_error = self._net_status != network_status.NetStatus.OK
         if net_error:

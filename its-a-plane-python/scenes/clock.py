@@ -35,8 +35,7 @@ def _is_night_now(now_time) -> bool:
 def _format_time(dt: datetime) -> str:
     if str(CLOCK_FORMAT).lower() == "24hr":
         return dt.strftime("%H:%M")
-    s = dt.strftime("%I:%M")
-    return s.lstrip("0") or "0:00"
+    return dt.strftime("%l:%M")
 
 
 class ClockScene(object):

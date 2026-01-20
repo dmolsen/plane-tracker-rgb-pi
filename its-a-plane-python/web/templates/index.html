@@ -133,7 +133,7 @@
                 {% if is_flight_live(closest) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
             {% endif %}
-            {% if closest.flightaware_hint %}
+            {% if (not is_flight_live(closest)) and closest.flightaware_hint %}
                 <small class="text-muted d-block mt-2" style="font-size: 0.6rem">
                     Look for flight taking off at {{ closest.flightaware_hint }}
                     {% if closest.origin or closest.origin_iata or closest.destination or closest.destination_iata %}
@@ -163,7 +163,7 @@
                 {% if is_flight_live(farthest) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
             {% endif %}
-            {% if farthest.flightaware_hint %}
+            {% if (not is_flight_live(farthest)) and farthest.flightaware_hint %}
                 <small class="text-muted d-block mt-2" style="font-size: 0.6rem">
                     Look for flight taking off at {{ farthest.flightaware_hint }}
                     {% if farthest.origin or farthest.origin_iata or farthest.destination or farthest.destination_iata %}

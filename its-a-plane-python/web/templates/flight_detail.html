@@ -78,15 +78,13 @@
 
     {% if progress is not none and has_destination %}
       <div class="mb-4">
-        <div class="position-relative" style="height: 10px;">
+        <div class="position-relative" style="height: 6px;">
           <div class="progress" style="height: 6px;">
             <div class="progress-bar bg-info" role="progressbar" style="width: {{ progress }}%;"
                  aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <i class="fas fa-plane text-muted position-absolute"
-             style="left: calc({{ progress }}%); top: 45%; transform: translate(-50%, -50%) scale(0.85);"></i>
-          <i class="fas fa-house text-muted position-absolute"
-             style="left: calc({{ progress }}%); top: 85%; transform: translate(-50%, -50%) scale(0.7);"></i>
+             style="left: calc({{ progress }}%); top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">
           <span>{{ "{:,.1f}".format(flight.distance_origin) }} {{ distance_unit }} traveled</span>
@@ -95,15 +93,13 @@
       </div>
     {% elif flight.distance_origin is not none %}
       <div class="mb-4">
-        <div class="position-relative" style="height: 10px;">
+        <div class="position-relative" style="height: 6px;">
           <div class="progress" style="height: 6px;">
             <div class="progress-bar bg-secondary" role="progressbar" style="width: 100%;"
                  aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
           <i class="fas fa-plane text-muted position-absolute"
-             style="left: 100%; top: 45%; transform: translate(-50%, -50%) scale(0.85);"></i>
-          <i class="fas fa-house text-muted position-absolute"
-             style="left: 100%; top: 85%; transform: translate(-50%, -50%) scale(0.7);"></i>
+             style="left: 100%; top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">
           <span>{{ "{:,.1f}".format(flight.distance_origin) }} {{ distance_unit }} traveled</span>

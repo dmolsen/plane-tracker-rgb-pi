@@ -339,6 +339,11 @@ def maps(filename):
     return send_from_directory(maps_dir, filename)
 
 
+@app.get("/favicon.ico")
+def favicon():
+    return send_from_directory(os.path.join(WEB_DIR, "static/images"), "favicon.ico")
+
+
 @app.get("/api/network")
 def api_network():
     hostname = os.uname().nodename

@@ -39,6 +39,7 @@ class DaysForecastScene(object):
         self._redraw_forecast = True
         self._last_hour = None
         self._cached_forecast = None
+        self._last_forecast_attempt = None
 
         # icon_name -> PIL.Image(RGB) or None
         self._icon_cache = {}
@@ -145,6 +146,19 @@ class DaysForecastScene(object):
         # FETCH OR USE CACHE
         # -------------------------
         if need_fetch:
+            if self._last_forecast_attempt:
+                elapsed = (datetime.utcnow() - self._last_forecast_attempt).total_seconds()
+                if elapsed < 900:
+                    forecast = self._cached_forecast
+                    if not forecast:
+                        return
+                else:
+                    forecast = None
+            else:
+                forecast = None
+
+            if forecast is None:
+                self._last_forecast_attempt = datetime.utcnow()
             forecast = grab_forecast(tag="days")
             if not forecast:
                 if self._cached_forecast:

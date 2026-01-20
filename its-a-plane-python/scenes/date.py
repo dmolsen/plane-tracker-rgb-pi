@@ -49,6 +49,7 @@ class DateScene(object):
         # Moon phase cache
         self.today_moonphase = None
         self.last_fetched_moonphase_day = None  # day-of-month when we last fetched
+        self._last_moonphase_attempt = None
 
         # Track Display-level full clears so we can redraw after canvas.Clear()
         self._last_clear_token_seen = None
@@ -84,8 +85,11 @@ class DateScene(object):
         now = datetime.now()
         if self.last_fetched_moonphase_day == now.day:
             return self.today_moonphase
+        if self._last_moonphase_attempt and (now - self._last_moonphase_attempt).total_seconds() < 900:
+            return self.today_moonphase
 
         try:
+            self._last_moonphase_attempt = now
             forecast = grab_forecast(tag="DateScene")
             if not forecast:
                 logging.error("Forecast missing/API error (moon phase).")

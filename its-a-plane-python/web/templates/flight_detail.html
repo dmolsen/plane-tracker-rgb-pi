@@ -17,6 +17,7 @@
 {% set altitude_trend = flight.get("altitude_trend") if flight is mapping else None %}
 {% set speed_trend = flight.get("speed_trend") if flight is mapping else None %}
 {% set heading = flight.get("heading") if flight is mapping else (flight.heading if flight.heading is defined else None) %}
+{% set is_heli = flight.plane and flight.plane|string|upper|trim|startswith("EC") %}
 {% set total_air_minutes = ((flight.time_estimated_arrival or flight.time_scheduled_arrival) - (flight.time_real_departure or flight.time_scheduled_departure)) / 60 if (flight.time_estimated_arrival or flight.time_scheduled_arrival) and (flight.time_real_departure or flight.time_scheduled_departure) else None %}
 {% set total_air_hours = (total_air_minutes // 60) if total_air_minutes is not none else None %}
 {% set total_air_min_rem = (total_air_minutes % 60) if total_air_minutes is not none else None %}
@@ -31,7 +32,7 @@
         {% if airline_icon %}
           <img src="{{ airline_icon }}" alt="{{ flight.airline }}" class="rounded" style="width: 36px; height: 36px;">
         {% else %}
-          <i class="fas fa-plane text-muted"></i>
+          <i class="fas {{ 'fa-helicopter' if is_heli else 'fa-plane' }} text-muted"></i>
         {% endif %}
         <div class="flex-grow-1">
           <div class="fw-semibold">

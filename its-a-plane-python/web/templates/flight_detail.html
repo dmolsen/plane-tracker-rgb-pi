@@ -18,6 +18,12 @@
 {% set speed_trend = flight.get("speed_trend") if flight is mapping else None %}
 {% set heading = flight.get("heading") if flight is mapping else (flight.heading if flight.heading is defined else None) %}
 {% set is_heli = flight.plane and flight.plane|string|upper|trim|startswith("EC") %}
+{% set callsign = flight.callsign if flight.callsign is defined else (flight.get("callsign") if flight is mapping else "") %}
+{% set callsign_prefix = callsign|string|upper|trim[:3] %}
+{% set is_af1 = callsign|string|upper|trim == "AF1" %}
+{% set is_cargo = callsign_prefix in ["FDX", "FX", "UPS", "5X"] %}
+{% set is_military = callsign_prefix in ["CNV","RCH","GKA","NVY","RFR","RRR","FAG","ASY","ASF","BAF","BRS","EXB","AFB","CFC","CKJ","FAC","HRZ","CEF","FAE","EGY","EEF","FNF","FAF","GAF","GAM","GNY","HAF","HUF","IFC","IAM","RJZ","LAF","LYF","RMF","FAM","NAF","KIW","NGR","NOW","MJN","FPR","PLF","PNY","AFP","ROF","RFF","RSF","SRB","SAF","SQF","LMG","AME","SVF","SUI","TUN","HVK","UAF"] %}
+{% set progress_icon = 'fa-flag-usa' if is_af1 else ('fa-truck' if is_cargo else ('fa-jet-fighter' if is_military else 'fa-helicopter')) %}
 {% set total_air_minutes = ((flight.time_estimated_arrival or flight.time_scheduled_arrival) - (flight.time_real_departure or flight.time_scheduled_departure)) / 60 if (flight.time_estimated_arrival or flight.time_scheduled_arrival) and (flight.time_real_departure or flight.time_scheduled_departure) else None %}
 {% set total_air_hours = (total_air_minutes // 60) if total_air_minutes is not none else None %}
 {% set total_air_min_rem = (total_air_minutes % 60) if total_air_minutes is not none else None %}
@@ -32,7 +38,7 @@
         {% if airline_icon %}
           <img src="{{ airline_icon }}" alt="{{ flight.airline }}" class="rounded" style="width: 36px; height: 36px;">
         {% else %}
-          <i class="fas {{ 'fa-helicopter' if is_heli else 'fa-plane' }} text-muted"></i>
+          <i class="fas {{ progress_icon }} text-muted"></i>
         {% endif %}
         <div class="flex-grow-1">
           <div class="fw-semibold">
@@ -84,7 +90,7 @@
             <div class="progress-bar bg-info" role="progressbar" style="width: {{ progress }}%;"
                  aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
-          <i class="fas fa-plane text-muted position-absolute"
+          <i class="fas {{ progress_icon }} text-muted position-absolute"
              style="left: calc({{ progress }}%); top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">
@@ -99,7 +105,7 @@
             <div class="progress-bar bg-secondary" role="progressbar" style="width: 100%;"
                  aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
-          <i class="fas fa-plane text-muted position-absolute"
+          <i class="fas {{ progress_icon }} text-muted position-absolute"
              style="left: 100%; top: 50%; transform: translate(-50%, -50%) scale(0.85);"></i>
         </div>
         <div class="d-flex justify-content-between small text-muted mt-1">

@@ -19,7 +19,8 @@
 {% set heading = flight.get("heading") if flight is mapping else (flight.heading if flight.heading is defined else None) %}
 {% set is_heli = flight.plane and flight.plane|string|upper|trim|startswith("EC") %}
 {% set callsign = flight.callsign if flight.callsign is defined else (flight.get("callsign") if flight is mapping else "") %}
-{% set callsign_prefix = callsign|string|upper|trim[:3] %}
+{% set callsign_clean = callsign|string|upper|trim %}
+{% set callsign_prefix = callsign_clean[:3] %}
 {% set is_af1 = callsign|string|upper|trim == "AF1" %}
 {% set is_cargo = callsign_prefix in ["FDX", "FX", "UPS", "5X"] %}
 {% set is_military = callsign_prefix in ["CNV","RCH","GKA","NVY","RFR","RRR","FAG","ASY","ASF","BAF","BRS","EXB","AFB","CFC","CKJ","FAC","HRZ","CEF","FAE","EGY","EEF","FNF","FAF","GAF","GAM","GNY","HAF","HUF","IFC","IAM","RJZ","LAF","LYF","RMF","FAM","NAF","KIW","NGR","NOW","MJN","FPR","PLF","PNY","AFP","ROF","RFF","RSF","SRB","SAF","SQF","LMG","AME","SVF","SUI","TUN","HVK","UAF"] %}

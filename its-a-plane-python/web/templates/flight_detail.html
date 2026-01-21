@@ -26,7 +26,7 @@
 {% set is_af1 = callsign|string|upper|trim == "AF1" %}
 {% set is_cargo = callsign_prefix in ["FDX", "FX", "UPS", "5X"] %}
 {% set is_military = callsign_prefix in ["CNV","RCH","GKA","NVY","RFR","RRR","FAG","ASY","ASF","BAF","BRS","EXB","AFB","CFC","CKJ","FAC","HRZ","CEF","FAE","EGY","EEF","FNF","FAF","GAF","GAM","GNY","HAF","HUF","IFC","IAM","RJZ","LAF","LYF","RMF","FAM","NAF","KIW","NGR","NOW","MJN","FPR","PLF","PNY","AFP","ROF","RFF","RSF","SRB","SAF","SQF","LMG","AME","SVF","SUI","TUN","HVK","UAF"] %}
-{% set progress_icon = 'fa-flag-usa' if is_af1 else ('fa-truck' if is_cargo else ('fa-jet-fighter' if is_military else 'fa-helicopter')) %}
+{% set progress_icon = 'fa-flag-usa' if is_af1 else ('fa-truck' if is_cargo else ('fa-jet-fighter' if is_military else ('fa-helicopter' if is_heli else 'fa-plane'))) %}
 {% set total_air_minutes = ((flight.time_estimated_arrival or flight.time_scheduled_arrival) - (flight.time_real_departure or flight.time_scheduled_departure)) / 60 if (flight.time_estimated_arrival or flight.time_scheduled_arrival) and (flight.time_real_departure or flight.time_scheduled_departure) else None %}
 {% set total_air_hours = (total_air_minutes // 60) if total_air_minutes is not none else None %}
 {% set total_air_min_rem = (total_air_minutes % 60) if total_air_minutes is not none else None %}

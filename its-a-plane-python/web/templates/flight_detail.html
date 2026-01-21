@@ -17,7 +17,9 @@
 {% set altitude_trend = flight.get("altitude_trend") if flight is mapping else None %}
 {% set speed_trend = flight.get("speed_trend") if flight is mapping else None %}
 {% set heading = flight.get("heading") if flight is mapping else (flight.heading if flight.heading is defined else None) %}
-{% set is_heli = flight.plane and flight.plane|string|upper|trim|startswith("EC") %}
+{% set plane_code = flight.plane if flight.plane is defined else (flight.get("plane") if flight is mapping else "") %}
+{% set plane_code_clean = plane_code|string|upper|trim %}
+{% set is_heli = plane_code_clean[:2] == "EC" %}
 {% set callsign = flight.callsign if flight.callsign is defined else (flight.get("callsign") if flight is mapping else "") %}
 {% set callsign_clean = callsign|string|upper|trim %}
 {% set callsign_prefix = callsign_clean[:3] %}

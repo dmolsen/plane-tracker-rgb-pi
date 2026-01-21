@@ -67,18 +67,24 @@ TOMORROW_API_URL = "https://api.tomorrow.io/v4"
 # Global variable to track last 429
 _last_rate_limit_hit = None
 _COOLDOWN_SECONDS = 300  # 5 minutes cooldown after 429
+_last_cooldown_log = None
 
 def grab_temperature_and_humidity():
     global _last_rate_limit_hit
+    global _last_cooldown_log
 
     # Check if we are still in cooldown
     if _last_rate_limit_hit:
         elapsed = (datetime.now() - _last_rate_limit_hit).total_seconds()
         if elapsed < _COOLDOWN_SECONDS:
-            logging.warning(f"Skipping API call, cooldown in effect ({int(_COOLDOWN_SECONDS - elapsed)}s left)")
+            remaining = int(_COOLDOWN_SECONDS - elapsed)
+            if (_last_cooldown_log is None) or (_last_cooldown_log != remaining // 60):
+                _last_cooldown_log = remaining // 60
+                logging.warning(f"Skipping API call, cooldown in effect ({remaining}s left)")
             return None, None
         else:
             _last_rate_limit_hit = None  # reset cooldown
+            _last_cooldown_log = None
 
     try:
         s = get_session()
@@ -121,6 +127,7 @@ def grab_temperature_and_humidity():
 # Global variable to track last 429 for forecast
 _last_forecast_rate_limit_hit = None
 _FORECAST_COOLDOWN_SECONDS = 300  # 5 minutes cooldown after 429
+_last_forecast_cooldown_log = None
 
 def grab_forecast(tag="unknown"):
     """
@@ -128,16 +135,21 @@ def grab_forecast(tag="unknown"):
     Returns a list of intervals or [] on error.
     """
     global _last_forecast_rate_limit_hit
+    global _last_forecast_cooldown_log
 
     # Check if we are still in cooldown after a 429
     if _last_forecast_rate_limit_hit:
         elapsed = (datetime.utcnow() - _last_forecast_rate_limit_hit).total_seconds()
         if elapsed < _FORECAST_COOLDOWN_SECONDS:
-            logging.warning(f"[Forecast:{tag}] Skipping API call, cooldown in effect "
-                            f"({int(_FORECAST_COOLDOWN_SECONDS - elapsed)}s left)")
+            remaining = int(_FORECAST_COOLDOWN_SECONDS - elapsed)
+            if (_last_forecast_cooldown_log is None) or (_last_forecast_cooldown_log != remaining // 60):
+                _last_forecast_cooldown_log = remaining // 60
+                logging.warning(f"[Forecast:{tag}] Skipping API call, cooldown in effect "
+                                f"({remaining}s left)")
             return []
         else:
             _last_forecast_rate_limit_hit = None  # reset cooldown
+            _last_forecast_cooldown_log = None
 
     current_time = datetime.utcnow()
     dt = current_time + timedelta(hours=6)

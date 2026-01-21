@@ -34,8 +34,6 @@
 <div class="container mt-4">
   {% if flights %}
   {% for flight in flights %}
-      {% set list_rank = loop.index %}
-      {% set list_metric = "Seen " ~ (time_ago(flight.timestamp) or flight.timestamp) %}
       {% include "flight_card.html" %}
   {% endfor %}
 {% else %}

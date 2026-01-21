@@ -34,8 +34,6 @@
 <div class="container mt-4">
     {% if flights %}
   {% for flight in flights %}
-      {% set list_rank = loop.index %}
-      {% set list_metric = ("{:,.1f}".format(flight.distance) ~ " " ~ distance_unit_label()) if flight.distance is not none else "" %}
       {% include "flight_card.html" %}
   {% endfor %}
     {% else %}

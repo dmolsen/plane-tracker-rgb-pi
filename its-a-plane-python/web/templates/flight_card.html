@@ -1,14 +1,4 @@
 <div class="card shadow-sm p-3 mb-3">
-  {% if list_rank or list_metric %}
-  <div class="small text-muted mb-2">
-    {% if list_rank %}
-      <span class="badge bg-dark text-white me-2">#{{ list_rank }}</span>
-    {% endif %}
-    {% if list_metric %}
-      <span>{{ list_metric }}</span>
-    {% endif %}
-  </div>
-  {% endif %}
   {% include "flight_detail.html" %}
   {% if flight.flightaware_live or flight.flightaware_history %}
   <a class="btn btn-sm btn-primary" target="_blank" href="{{ flight.flightaware_live if is_flight_live(flight) else flight.flightaware_history }}">

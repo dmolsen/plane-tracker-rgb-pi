@@ -34,9 +34,6 @@
 <div class="container mt-4">
     {% if flights %}
   {% for flight in flights %}
-      {% set list_rank = loop.index %}
-      {% set route_total = flight.route_length or (flight.distance_origin + flight.distance_destination if flight.distance_origin is not none and flight.distance_destination is not none else None) or flight.farthest_value %}
-      {% set list_metric = ("{:,.1f}".format(route_total) ~ " " ~ distance_unit_label()) if route_total is not none else "" %}
       {% include "flight_card.html" %}
   {% endfor %}
     {% else %}

@@ -105,8 +105,9 @@
             {% with flight=recent %}
                 {% include "flight_detail.html" %}
             {% endwith %}
-            {% if recent.flightaware_live or recent.flightaware_history %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent.flightaware_live if is_flight_live(recent) else recent.flightaware_history }}">
+            {% set recent_link = recent.flightaware_live if is_flight_live(recent) else recent.flightaware_history %}
+            {% if recent_link %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ recent_link }}">
                 <i class="fas fa-external-link-alt"></i>
                 {% if is_flight_live(recent) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
@@ -127,8 +128,9 @@
             {% with flight=closest %}
                 {% include "flight_detail.html" %}
             {% endwith %}
-            {% if closest.flightaware_live or closest.flightaware_history %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest.flightaware_live if is_flight_live(closest) else closest.flightaware_history }}">
+            {% set closest_link = closest.flightaware_live if is_flight_live(closest) else closest.flightaware_history %}
+            {% if closest_link %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ closest_link }}">
                 <i class="fas fa-external-link-alt"></i>
                 {% if is_flight_live(closest) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>
@@ -157,8 +159,9 @@
             {% with flight=farthest %}
                 {% include "flight_detail.html" %}
             {% endwith %}
-            {% if farthest.flightaware_live or farthest.flightaware_history %}
-            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest.flightaware_live if is_flight_live(farthest) else farthest.flightaware_history }}">
+            {% set farthest_link = farthest.flightaware_live if is_flight_live(farthest) else farthest.flightaware_history %}
+            {% if farthest_link %}
+            <a class="btn btn-sm btn-primary" target="_blank" href="{{ farthest_link }}">
                 <i class="fas fa-external-link-alt"></i>
                 {% if is_flight_live(farthest) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
             </a>

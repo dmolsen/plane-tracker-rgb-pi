@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 import json
+import os
+import sys
 from datetime import datetime, timedelta
 
 import requests
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 try:
     from config import TOMORROW_API_KEY, TEMPERATURE_LOCATION, TEMPERATURE_UNITS, FORECAST_DAYS

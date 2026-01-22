@@ -7,12 +7,12 @@
       {% if is_flight_live(flight) %}View Live on FlightAware{% else %}View History on FlightAware{% endif %}
   </a>
   {% if (not is_flight_live(flight)) and flight.flightaware_hint and flight.flightaware_hint not in ["Scheduled departure unknown", "Unknown"] %}
+    {% set hint_parts = flight.flightaware_hint.split(" ") %}
+    {% set hint_date = hint_parts[:3] | join(" ") %}
+    {% set hint_time = hint_parts[3:] | join(" ") %}
     <div>
       <small class="text-muted d-block mt-2" style="font-size: 0.6rem">
-        Look for flight taking off at {{ flight.flightaware_hint }}
-        {% if flight.origin or flight.origin_iata or flight.destination or flight.destination_iata %}
-          from {{ flight.origin or flight.origin_iata }} → {{ flight.destination or flight.destination_iata or "Unknown" }}
-        {% endif %}
+        Look for flight taking off from {{ flight.origin or flight.origin_iata }} → {{ flight.destination or flight.destination_iata or "Unknown" }} on {{ hint_date }} at {{ hint_time }}
       </small>
     </div>
   {% endif %}

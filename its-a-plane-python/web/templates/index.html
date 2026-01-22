@@ -136,11 +136,11 @@
             </a>
             {% endif %}
             {% if (not is_flight_live(closest)) and closest.flightaware_hint and closest.flightaware_hint not in ["Scheduled departure unknown", "Unknown"] %}
+                {% set hint_parts = closest.flightaware_hint.split(" ") %}
+                {% set hint_date = hint_parts[:3] | join(" ") %}
+                {% set hint_time = hint_parts[3:] | join(" ") %}
                 <small class="text-muted d-block mt-2" style="font-size: 0.6rem">
-                    Look for flight taking off at {{ closest.flightaware_hint }}
-                    {% if closest.origin or closest.origin_iata or closest.destination or closest.destination_iata %}
-                        from {{ closest.origin or closest.origin_iata }} → {{ closest.destination or closest.destination_iata or "Unknown" }}
-                    {% endif %}
+                    Look for flight taking off from {{ closest.origin or closest.origin_iata }} → {{ closest.destination or closest.destination_iata or "Unknown" }} on {{ hint_date }} at {{ hint_time }}
                 </small>
             {% endif %}
         {% else %}
@@ -167,11 +167,11 @@
             </a>
             {% endif %}
             {% if (not is_flight_live(farthest)) and farthest.flightaware_hint and farthest.flightaware_hint not in ["Scheduled departure unknown", "Unknown"] %}
+                {% set hint_parts = farthest.flightaware_hint.split(" ") %}
+                {% set hint_date = hint_parts[:3] | join(" ") %}
+                {% set hint_time = hint_parts[3:] | join(" ") %}
                 <small class="text-muted d-block mt-2" style="font-size: 0.6rem">
-                    Look for flight taking off at {{ farthest.flightaware_hint }}
-                    {% if farthest.origin or farthest.origin_iata or farthest.destination or farthest.destination_iata %}
-                        from {{ farthest.origin or farthest.origin_iata }} → {{ farthest.destination or farthest.destination_iata or "Unknown" }}
-                    {% endif %}
+                    Look for flight taking off from {{ farthest.origin or farthest.origin_iata }} → {{ farthest.destination or farthest.destination_iata or "Unknown" }} on {{ hint_date }} at {{ hint_time }}
                 </small>
             {% endif %}
         {% else %}

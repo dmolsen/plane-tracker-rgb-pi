@@ -127,7 +127,9 @@ def grab_temperature_and_humidity():
 # Global variable to track last 429 for forecast
 _last_forecast_rate_limit_hit = None
 _FORECAST_COOLDOWN_SECONDS = 300  # 5 minutes cooldown after 429
+_FORECAST_MIN_INTERVAL_SECONDS = 900  # global throttle across callers
 _last_forecast_cooldown_log = None
+_last_forecast_success = None
 
 def grab_forecast(tag="unknown"):
     """
@@ -136,6 +138,16 @@ def grab_forecast(tag="unknown"):
     """
     global _last_forecast_rate_limit_hit
     global _last_forecast_cooldown_log
+    global _last_forecast_success
+
+    if _last_forecast_success:
+        elapsed = (datetime.utcnow() - _last_forecast_success).total_seconds()
+        if elapsed < _FORECAST_MIN_INTERVAL_SECONDS:
+            remaining = int(_FORECAST_MIN_INTERVAL_SECONDS - elapsed)
+            if (_last_forecast_cooldown_log is None) or (_last_forecast_cooldown_log != remaining // 60):
+                _last_forecast_cooldown_log = remaining // 60
+                logging.warning(f"[Forecast:{tag}] Throttled, last success {int(elapsed)}s ago")
+            return []
 
     # Check if we are still in cooldown after a 429
     if _last_forecast_rate_limit_hit:
@@ -201,6 +213,8 @@ def grab_forecast(tag="unknown"):
             logging.error(f"[Forecast:{tag}] Timelines returned but no intervals")
             return []
 
+        _last_forecast_success = datetime.utcnow()
+        _last_forecast_cooldown_log = None
         return intervals
 
     except RequestException as e:
